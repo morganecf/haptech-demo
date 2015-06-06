@@ -1,0 +1,214 @@
+<!doctype html>
+<html>
+  <head>
+    <title> Socket.IO and Physics JS example </title>
+
+    <style type="text/css">
+      html, body {
+        height: 100%;
+        margin: 0;
+      }
+      #viewport {
+        position: relative;
+        height: 100%;
+        background: #1d1f20;
+      }
+    </style>
+  </head>
+
+  <body>
+
+    <!-- <form action="">
+        <input id="location" autocomplete="off"/><button>Send Location</button>
+      </form> -->
+
+    <div id="view">
+        <canvas id="viewport" width="500" height="500"></canvas>      
+    </div>
+
+    <div id="board">
+        <canvas id="boardport" width="500" height="500"></canvas>
+    </div>
+
+    <script src="physics-js/dist/physicsjs-full.min.js"> </script>
+    <script src="physics-js/dist/bodies/convex-polygon.js"> </script>
+    <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+    <script> 
+
+      // Create the haptic board emulator - just one world with a point
+      Physics(function (world) {
+        // Load the socket client
+        var socket = io();
+
+        var viewWidth = 500;
+        var viewHeight = 300;
+
+        // Add the renderer
+        var renderer = Physics.renderer('canvas', {
+          el: 'viewport',
+          width: viewWidth,
+          height: viewHeight,
+          meta: false,
+          styles: {
+            'circle': {
+              strokeStyle:'',
+              lineWidth: 2,
+              fillStyle: ''
+            }
+          }
+        }); 
+        world.add(renderer);
+
+        // Circle representing the haptic point of contact
+        var circle = Physics.body('circle', {
+          x: 50,
+          y: 30,
+          radius: 10,
+          treatment: 'static'
+        });
+        world.add(circle);
+
+        // Configure mouse listener to update position of circle
+        // on mouse move, and send to socket
+        document.onmousemove = function (event) {
+          circle.state.pos = (event.x, event.y);
+          world.render();
+          socket.emit('location', {x: event.x, y: event.y});
+        }; 
+
+      });
+
+      // Create the physics world 
+      Physics(function (world) {
+
+        // Load the socket client
+        var socket = io();
+
+        var viewWidth = 500;
+        var viewHeight = 300;
+
+       // var obstacle_colors = ['#CD5C5C', '#00BFFF'];
+
+        var renderer = Physics.renderer('canvas', {
+          el: 'viewport',
+          width: viewWidth,
+          height: viewHeight,
+          meta: false, // don't display meta data
+          styles: {
+              // set colors for the circle body
+              'circle': {
+                  //strokeStyle: '#351024',
+                  lineWidth: 1,
+                  fillStyle: '#FFD700',
+                  //angleIndicator: '#351024'
+              },
+              // set colors for the obstacles (rectangles)
+              // 'rectangle': {
+              //     fillStyle: '#CD5C5C'
+              // }
+          }
+        });
+
+        // add the renderer
+        world.add(renderer);
+
+        // render on each step
+        //world.on('step', function () { world.render(); });
+
+        // bounds of the window
+        // var viewportBounds = Physics.aabb(0, 0, viewWidth, viewHeight);
+
+        // // constrain objects to these bounds
+        // world.add(Physics.behavior('edge-collision-detection', {
+        //     aabb: viewportBounds,
+        //     restitution: 0.99,
+        //     cof: 0.99
+        // }));
+
+        // add a circle
+        var circle = Physics.body('circle', {
+          x: 50,
+          y: 30,
+          radius: 10,
+          vx: 0,
+          vy: 0,
+          treatment: 'static'
+        });
+        world.add(circle);
+
+        // add some obstacles with velocity
+        // var obstacle1 = Physics.body('rectangle', {
+        //   x: 100,
+        //   y: 100,
+        //   width: 50,
+        //   height: 50,
+        //   vx: 0.2,
+        //   vy: 0.01
+        // });
+        // var obstacle2 = Physics.body('rectangle', {
+        //   x: 200,
+        //   y: 200,
+        //   width: 50,
+        //   height: 50,
+        //   vx: 0.2,
+        //   vy: 0.01
+        // });
+
+        // world.add(obstacle1);
+        // world.add(obstacle2);
+
+        world.render();
+
+        // add mouse listener 
+        // document.onmousemove = function (event) {
+        //   circle.state.pos.x = event.x;
+        //   circle.state.pos.y = event.y;
+        //   world.render();
+        // }; 
+
+        // ensure objects bounce when edge collision is detected
+        // world.add(Physics.behavior('body-impulse-response'));
+
+        // // // add some gravity
+        // world.add(Physics.behavior('constant-acceleration'));
+
+        // // subscribe to ticker to advance the simulation
+        // Physics.util.ticker.on(function (time, dt) {
+        //     world.step(time);
+        // }); 
+
+        // // start the ticker
+        // Physics.util.ticker.start();
+
+
+        // Emit/send the location to the socket
+        // $('form').submit(function () {
+        //     socket.emit('location', $('#location').val());
+        //     $('#location').val('');
+        //     return false;
+        // });
+
+        // Capture an emitted location and move the circle
+        socket.on('location', function (location) {
+          console.log(location);
+          var coords = location.split(',');
+          
+          var x = parseInt(coords[0]);
+          var y = parseInt(coords[1]);
+          
+          circle.state.pos.x = x;
+          circle.state.pos.y = y;
+
+          world.render();
+
+        });
+
+      });
+
+
+    </script>
+
+  </body>
+
+</html>
