@@ -1,0 +1,153 @@
+<!doctype html>
+<html>
+  <head>
+    <title> PhysicsJS Backend Example </title>
+
+    <style type="text/css">
+
+      html, body {
+        height: 100%;
+        margin: 0;
+      }
+      #viewport {
+        position: relative;
+        height: 100%;
+        background: white;
+      }
+
+    </style>
+
+  </head>
+
+  <body>
+      <!-- <canvas id="viewport" width="500" height="500"></canvas> -->     
+      <canvas id="canvas" width="500" height="500"></canvas>
+  </body>
+
+  <script src="Chipmunk-js/cp.js"></script>
+  <script src="paper-js/dist/paper-full.min.js"></script>
+  <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+
+  <script src="balls.js"></script>
+ <!--  // <script src="cptest.js"></script> -->
+
+  <script> 
+
+      // console.log("balls");
+      new Balls();
+
+      var socket = io();
+
+      socket.emit('ready', 'ready');
+
+      // var height = window.innerHeight-30;
+
+      // var point2canvas = function(point) {
+      //     return new Point(point.x, (height - point.y));
+      // };
+
+      // paper.install(window);  //install view
+      // paper.setup('canvas'); 
+
+      // // Add a paper ball
+      // var ball = new Path.Circle({
+      //   center: {x: 50, y: 50},
+      //   radius: 10,
+      //   strokeColor: 'black',
+      //   fillColor: {
+      //     hue: Math.random() * 360,
+      //     saturation: 1,
+      //     brightness: 1
+      //   }
+      // });
+
+      // // Tell the server we are ready to receive information
+      // socket.emit('ready', function () {
+      //   console.log('telling server we are ready');
+      // });
+
+      // socket.on('location', function (data) {
+      //   ball.position = data;
+      // });
+
+      // var space = new cp.Space();
+      // space.iterations = 10;
+
+      // // Add a chipmunk ball 
+      // var radius = 10;
+      // var mass = 10;
+      // var pos = cp.v(50, 50);
+      // var body = space.addBody(new cp.Body(mass, cp.momentForCircle(mass, 0, radius, cp.v(0,0))));
+      // body.setPos(pos);
+      // var circle = space.addShape(new cp.CircleShape(body, radius, cp.v(0, 0)));
+      // circle.setElasticity(0.8);
+      // circle.setFriction(1);
+
+      // Add the corresponding paper ball
+      // circle.paper = new Path.Circle(point2canvas(pos), radius);
+      // circle.paper.fillColor = {
+      //   hue: Math.random() * 360,
+      //   saturation: 1,
+      //   brightness: 1
+      // };
+      // circle.paper.strokeColor = 'black';
+
+      // Physics(function (world) {
+      //     // The socket 
+      //     var socket = io();
+
+      //     // bounds of the window
+      //     //var viewportBounds = Physics.aabb(0, 0, window.innerWidth, window.innerHeight)
+      //     var width = window.innerWidth;
+      //     var height = window.innerHeight;
+          
+      //     var renderer = Physics.renderer('canvas', {el: 'viewport', width: width, height: height, meta: false});
+      //     world.add(renderer);
+
+      //     // some fun colors
+      //     var colors = {
+      //         blue: '0x1d6b98',
+      //         blueDark: '0x14546f',
+      //         red: '0xdc322f',
+      //         darkRed: '0xa42222'
+      //     };
+
+      //     // Same objects as in backend - place in the same corner
+      //     // Only difference is that they're static 
+      //     var circles = [];
+      //     var l = 50;
+      //     while( l-- ) {
+      //         circles.push(Physics.body('circle', {
+      //             x: 50,
+      //             y: 50,
+      //             treatment: 'static',
+      //             radius: 10,
+      //             mass: 1,
+      //             restitution: 0.5,   // energy in : energy out
+      //             styles: {
+      //                 strokeStyle: colors.darkBlue,
+      //                 fillStyle: colors.blue,
+      //                 lineWidth: 1
+      //             }
+      //         }));
+      //     }
+
+      //     world.add(circles);
+      //     world.render();
+
+      //     // Listen for incoming location data 
+      //     socket.on('location', function (data) {
+      //         var locations = data.circle_locations;
+      //         for (var i = 0; i < locations.length; i++) {
+      //             circles[i].x = locations[i].x;
+      //             circles[i].y = locations[i].y;
+      //         }
+      //         world.render();
+      //     });
+
+      // });
+      
+
+  </script>
+
+  </html>
