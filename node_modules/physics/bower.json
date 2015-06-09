@@ -1,0 +1,12 @@
+{
+    "name"                          : "physics",
+    "version"                       : "1.0.1",
+    "description"                   : "Port of the Traer Physics Library from Processing",
+    "homepage"                      : "http://jonobr1.github.io/Physics/",
+    "author"                        : "Jono Brandel (http://jonobr1.com)",
+    "contributors"                  : [ "David Schoonover <dsc@less.ly> (http://less.ly)" ],
+    "keywords"                      : [ "physics", "particle", "system", "animation" ],
+    
+    "main"                          : [ "./build/particle.js" ],
+    "ignore"                        : [ ".*", "utils", "node_modules" ]
+}
