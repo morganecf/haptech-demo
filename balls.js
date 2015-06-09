@@ -5,7 +5,7 @@ var NOT_GRABABLE_MASK = ~GRABABLE_MASK_BIT;
 
 var socket = io();
 
-var Balls = function() {
+var Balls = function () {
 	var self = this;
 	
 	this.canvas2point = function(x, y) {
@@ -17,6 +17,12 @@ var Balls = function() {
 	};
   
   this.canvas = document.getElementById('canvas');
+
+  // To avoid using mouse?? 
+  this.canvas.keepalive = true;
+
+  // To automatically resize based on window size  
+  this.canvas.resize = true;
   
   var width = this.width = this.canvas.width = window.innerWidth-30;
 	var height = this.height = this.canvas.height = window.innerHeight-30;
@@ -58,7 +64,7 @@ var Balls = function() {
 
   //add balls
   console.log('adding balls');
-	for (var i = 1; i <= 60; i++) {
+	for (var i = 1; i <= 2; i++) {
 		var radius = 20+i;
 		mass = 3+(i*2)/i;
 		pts = [v(200 + i, (2 * radius + 5) * i)];
@@ -79,10 +85,16 @@ var Balls = function() {
 	}
   
   socket.on("draw", function (data) {
+    
+    // Reposition everything 
     for (var i = 0; i < circles.length; i++) {
       circles[i].position = self.point2canvas(data.circle_data[i]);
     }
+
+    view.draw();
+
   });
+  
 
 };
 
