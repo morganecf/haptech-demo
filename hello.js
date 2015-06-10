@@ -1,14 +1,14 @@
 /* JS hello world example of chipmunk's C hello world  */
 
 // Server/socket stuff 
-// var express = require('express');
-// var app = express();
-// var http = require('http').Server(app);
-// var io = require('socket.io')(http);
-// app.use(express.static(__dirname));
-// app.get('/', function (request, response) {
-//     response.sendFile(__dirname + '/hello.html');
-// });
+var express = require('express');
+var app = express();
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
+app.use(express.static(__dirname));
+app.get('/', function (request, response) {
+    response.sendFile(__dirname + '/hello.html');
+});
 
 cp = require("chipmunk");
 
@@ -41,8 +41,11 @@ function hello_world () {
 	// space.addCollisionHandler(ground, body, null, null, function (arbiter, space, data) {
 	// 	console.log("collision detected");
 	// });
-	space.setDefaultCollisionHandler(null, null, function (arbiter, space, data) {
-		console.log("collision detected");
+	space.setDefaultCollisionHandler(null, null, function (arbiter, space) {
+		// console.log("collision detected");
+		console.log(arbiter.totalImpulse());
+		console.log(arbiter.totalImpulseWithFriction());
+		console.log(arbiter.totalKE());
 	});
 
 	// Now step through the simulation of a ball dropping 
@@ -51,23 +54,6 @@ function hello_world () {
 	for (var time = 0; time < 2; time += time_step) {
 		var pos = body.getPos();
 		var vel = body.getVel();
-
-		console.log(pos);
-
-		// console.log('Time:', time);
-		// console.log('Position:', pos);
-		// console.log('Velocity:', vel);
-		// console.log('');
-
-		// if (body.space.arbiters[0]) {
-		// 	console.log(body.space.arbiters[0].getContactPointSet());
-		// 	console.log("COLLISION");
-		// 	console.log(pos);
-		// }
-		// else {
-		// 	console.log('no collision');
-		// 	console.log(pos);
-		// }
 
 		space.step(time_step);
 
