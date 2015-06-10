@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+  <head>
+    <title> Chipmunk Hello World </title>
+  </head>
+
+  <body>   
+      <canvas id="canvas" width="1000" height="500" keepalive="true"></canvas>
+  </body>
+
+  <script src="paper-js/dist/paper-full.min.js"></script>
+  <script src="node_modules/chipmunk/cp.min.js"></script>
+  <script src="socket.io.js"></script>
+
+  <script canvas="canvas"> 
+
+      var point2canvas = function(point) {
+          return new Point(point.x, (height - point.y));
+      };
+
+      var canvas2point = function(x, y) {
+        return cp.v(x, height - y);
+      };
+
+      var width = window.innerWidth-30;
+      var height = window.innerHeight-30;
+
+      // The socket client 
+      var socket = io();
+
+      // Install view
+      paper.install(window);  
+      paper.setup('canvas');
+
+      // Make sure the points correspond to CP points 
+      var ground_start = point2canvas(cp.v(0, 0));
+      var ground_end = point2canvas(cp.v(100, 0));
+      var circle_start = point2canvas(cp.v(50, 15));
+
+      console.log(ground_start);
+      console.log(ground_end);
+      console.log(circle_start);
+
+      // Create the ground 
+      // var ground = space.addShape(new cp.SegmentShape(space.staticBody, cp.v(-20, 5), cp.v(20, -5), 0));
+      var ground = new Path();
+      ground.strokeColor = 'black';
+      ground.add(ground_start, ground_end);
+
+      // Create the circle
+      // body.setPos(cp.v(0, 15));
+      var radius = 5;
+      var circle = new Path.Circle(circle_start, radius);
+      circle.fillColor = {
+        hue: 60,
+        saturation: 1,
+        brightness: 1
+      };
+      circle.strokeColor = 'black';
+      circle.strokeWidth = 5;
+      circle.opacity = 0.7;
+
+      view.draw();
+
+      // Tell the backend we are ready to start the simulation 
+      socket.emit('ready', 'ready'); 
+
+      // Listen for draw events 
+      socket.on('draw', function (pos) {
+        circle.position = point2canvas(pos); 
+        view.draw();
+      }); 
+
+  </script>
+
+  </html>
