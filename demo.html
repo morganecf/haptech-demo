@@ -1,32 +1,18 @@
 <!doctype html>
 <html>
   <head>
-    <title> PhysicsJS Backend Example </title>
-
-    <style type="text/css">
-
-      html, body {
-        height: 100%;
-        margin: 0;
-      }
-      #viewport {
-        position: relative;
-        height: 100%;
-        background: white;
-      }
-
-    </style>
-
+    <title> Haptic Demos </title>
   </head>
 
   <body>   
       <canvas id="canvas" width="1000" height="500" keepalive="true"></canvas>
   </body>
 
-  <script src="Chipmunk-js/cp.js"></script>
+  <script src="node_modules/chipmunk/cp.js"></script>
   <script src="paper-js/dist/paper-full.min.js"></script>
   <script src="socket.io.js"></script>
   <script src="circle.js"></script>
+  <script src="balls.js"></script>
 
   <script canvas="canvas"> 
 
@@ -34,7 +20,7 @@
       new CircleDemo();
 
       // The ball simulation 
-      //new Balls();
+      // new Balls();
 
       // Tell the back end we are ready to start 
       var socket = io();
