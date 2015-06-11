@@ -2,110 +2,65 @@
 <html>
   <head>
     <title> Chipmunk Hello World </title>
-  </head>
-
-  <body>   
-      <canvas id="canvas" width="1000" height="500" keepalive="true"></canvas>
-  </body>
-
+  
   <script src="paper-js/dist/paper-full.min.js"></script>
   <script src="node_modules/chipmunk/cp.min.js"></script>
   <script src="socket.io.js"></script>
 
-  <script canvas="canvas"> 
+  <script type="text/paperscript" canvas="canvas"> 
 
-      // CONSTANTS 
-      var gInfo = {startPos: cp.v(0, 0), endPos: cp.v(500, 0)};
-      var cInfo = {radius: 10, mass: 100, startPos: cp.v(250, 300)};
+          // The socket client 
+          var socket = io();
 
-      // Conversion equations 
-      var point2canvas = function(point) {
-          return new Point(point.x, (height - point.y));
-      };
-      var canvas2point = function(x, y) {
-        return cp.v(x, height - y);
-      };
+          // CONSTANTS 
+          var width = window.innerWidth-30;
+          var height = window.innerHeight-30;
 
-      var width = window.innerWidth-30;
-      var height = window.innerHeight-30;
+          // alert(height);
+          // alert(width);
 
-      // The socket client 
-      var socket = io();
+          // Make sure the points correspond to CP points 
+          var ground_start = new Point(0, height);
+          var ground_end = new Point(width, height);
+          var circle_start = new Point(width / 2, 20);
+          var circle_radius = 10;
 
-      // Install view
-      paper.install(window);  
-      paper.setup('canvas');
+          // Create the ground 
+          var ground = new Path();
+          ground.strokeColor = 'black';
+          ground.add(ground_start, ground_end);
 
-      // Make sure the points correspond to CP points 
-      var ground_start = point2canvas(gInfo.startPos);
-      var ground_end = point2canvas(gInfo.endPos);
-      var circle_start = point2canvas(cInfo.startPos);
+          // Create the circle
+          var circle = new Path.Circle(circle_start, circle_radius);
+          circle.fillColor = 'black';
+          // circle.fillColor = {
+          //   hue: 60,
+          //   saturation: 1,
+          //   brightness: 1
+          // };
+          // circle.strokeColor = 'black';
+          // circle.strokeWidth = 5;
+          // circle.opacity = 0.7;
 
-      // Create the ground 
-      var ground = new Path();
-      ground.strokeColor = 'black';
-      ground.add(ground_start, ground_end);
+          // Tell the backend we are ready to start the simulation
+          // and pass any data the simulation might need  
+          socket.emit('ready', {height: height, width: width}); 
 
-      // Create the circle
-      var radius = cInfo.radius;
-      var circle = new Path.Circle(circle_start, radius);
-      circle.fillColor = {
-        hue: 60,
-        saturation: 1,
-        brightness: 1
-      };
-      circle.strokeColor = 'black';
-      circle.strokeWidth = 5;
-      circle.opacity = 0.7;
+          // Listen for draw events 
+          socket.on('draw', function (pos) {
+            var c = new Path.Circle(pos, 5);
+            c.fillColor = 'black';
 
-      // Tell the backend we are ready to start the simulation 
-      socket.emit('ready', 'ready'); 
-
-      var fillcolor = 'black';
-
-      var curr_pos = circle_start;
-
-      // var frameHandler = function (event) {
-      //   socket.on('draw', function (pos) {
-      //     var c = new Path.Circle(point2canvas(pos), 5);
-      //     c.fillColor = fillcolor;
-      //     circle.position = point2canvas(pos); 
-      //   });
-      // };
-
-      view.on('frame', function (event) {
-        circle.position = curr_pos;
-        var c = new Path.Circle(curr_pos, 5);
-        c.fillColor = fillcolor;
-        //console.log(circle.position.y);
-      });
-
-      socket.on('draw', function (pos) {
-        curr_pos = point2canvas(pos);
-        console.log(curr_pos.y);
-      });
-
-      // Listen for draw events 
-      // socket.on('draw', function (pos) {
-      //   var c = new Path.Circle(point2canvas(pos), 5);
-      //   c.fillColor = fillcolor;
-
-      //   circle.position = point2canvas(pos); 
-      //   //console.log(circle.position.y);
-      //   //console.log(pos.y, circle.position.y);
-      //   // console.log(circle.position);
-      //   // console.log("");
-      //   view.draw();
-      // }); 
-
-      // socket.on('collision', function (pos) {
-      //   fillcolor = 'red';
-      //   var p = point2canvas(pos);
-      //   var c = new Path.Circle(p, 5);
-      //   c.fillColor = fillcolor;
-      //   view.draw();
-      // });
-
+            circle.position = pos; 
+            view.draw();
+          }); 
+      
   </script>
+
+  </head>
+
+  <body>   
+      <canvas id="canvas" width="1000" height="1400" keepalive="true"></canvas>
+  </body>
 
   </html>
