@@ -43,17 +43,20 @@
           user.strokeWidth = 5;
           user.opacity = 0.7;
 
+          // Create the mouse 
+          var mouse = new Path.Circle(user_start, 5);
+          mouse.fillColor = 'black';
+
           // Tell the backend we are ready to start the simulation
           // and pass any data the simulation might need  
           socket.emit('ready', {height: height, width: width}); 
 
           // Listen for draw events 
-          socket.on('draw', function (pos) {
-            // var c = new Path.Circle(pos, 5);
-            // c.fillColor = 'black';
-
-            circle.position.x = pos.x; 
-            circle.position.y = pos.y;
+          socket.on('draw', function (data) {
+            circle.position.x = data.pos.x; 
+            circle.position.y = data.pos.y;
+            user.position.x = data.userPos.x;
+            user.position.y = data.userPos.y;
             view.draw();
           }); 
 
@@ -66,11 +69,39 @@
           });
 
           // For now, cut out the emulator middle man - too laggy 
-          document.onmousemove = function (event) {
-            user.position = new Point(event.x, event.y);
-            view.draw();
-            socket.emit('user-move', {x: event.x, y: event.y});
+          // canvas.onmousemove = function (event) {
+          //   //user.position = new Point(event.x, event.y);
+          //   mouse.position = new Point(event.x, event.y);
+          //   view.draw();
+          //   socket.emit('user-move', {x: event.x, y: event.y});
+          // }; 
+
+          var clicked = false;
+
+          canvas.onmousedown = function (event) {
+            event.preventDefault();
+            //user.position = new Point(event.x, event.y);
+            // mouse.position = new Point(event.x, event.y);
+            // view.draw();
+            //socket.emit('user-move', {x: event.x, y: event.y});
+            socket.emit('mousedown', {x: event.x, y: event.y});
+            clicked = true;
           }; 
+
+          canvas.onmousemove = function (event) {
+            if (clicked) {
+              mouse.position = new Point(event.x, event.y);
+              view.draw();
+              socket.emit('mousemove', {x: event.x, y: event.y});
+            }
+          };
+
+          canvas.onmouseup = function (event) {
+            clicked = false;
+            mouse.position = user.position;
+            view.draw();
+            socket.emit('mouseup', {x: event.x, y: event.y});
+          };
 
           // Listen for user draw events 
           // socket.on('user-move-backend', function (pos) {

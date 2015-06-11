@@ -18,6 +18,8 @@ var GRABABLE_MASK_BIT = 1<<31;
 var NOT_GRABABLE_MASK = ~GRABABLE_MASK_BIT;
 
 var user_body = null;
+var mouse_body = null;
+var space = null;
 
 // The hello world simulation 
 function hello_world (height, width) {
@@ -40,7 +42,7 @@ function hello_world (height, width) {
 	var user_mass = 55;
 
 	// Create space 
-	var space = new cp.Space();
+	space = new cp.Space();
 	space.gravity = cp.v(0, 500);
 	space.collisionSlop = 0.5;
 
@@ -71,8 +73,16 @@ function hello_world (height, width) {
 	var user_shape = space.addShape(new cp.CircleShape(user_body, user_radius, cp.v(0, 0)));
 	user_shape.setFriction(1);
 	user_shape.setElasticity(1);
-
 	user_body.id = 'user';
+
+	// Mouse kinematic body 
+	mouse_body = new cp.Body(Infinity, Infinity);
+	mouse_body.setPos(user_start);
+	// Create a joint constraint on the user 
+	// var mouse_joint = new cp.PivotJoint(mouse_body, user_body, cp.v(0, 0), user_body.world2Local(user_start));
+	// mouse_joint.maxForce = 50000;
+	// mouse_joint.errorBias = Math.pow(1 - 0.15, 60);
+	// space.addConstraint(mouse_joint);
 
 	// Add a collision handler for the wall and ball 
 	// args: obj1, obj2, before, preSolve, postSolve, separate
@@ -94,8 +104,9 @@ function hello_world (height, width) {
 	// Now step through the simulation of a ball dropping
 	setInterval(function () {
 		var pos = body.getPos();
+		var userPos = user_body.getPos();
 		space.step(1.0/60.0);
-		io.emit('draw', pos);
+		io.emit('draw', {pos: pos, userPos: userPos});
 	}, 66);
 }
 
@@ -110,7 +121,24 @@ io.on('connection', function (socket) {
 
 	socket.on('user-move', function (pos) {
 		//io.emit('user-move-backend', pos);
-		if (user_body) user_body.setPos(cp.v(pos.x, pos.y));
+		//if (user_body) user_body.setPos(cp.v(pos.x, pos.y));
+		if (mouse_body) mouse_body.setPos(cp.v(pos.x, pos.y));
+	});
+
+	socket.on('mousedown', function (pos) {
+		var shape = space.pointQueryFirst(pos, GRABABLE_MASK_BIT, cp.NO_GROUP);
+		if (shape && space) {
+			var body = shape.body;
+			var mouseJoint = new cp.PivotJoint(mouse_body, body, cp.v(0, 0), body.world2Local(pos));
+
+			mouseJoint.maxForce = 50000;
+			mouseJoint.errorBias = Math.pow(1 - 0.15, 60);
+			space.addConstraint(mouseJoint);
+		}
+	});
+
+	socket.on('mousemove', function (pos) {
+		if (mouse_body) mouse_body.setPos(cp.v(pos.x, pos.y));
 	});
 });
 
