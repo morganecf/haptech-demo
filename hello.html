@@ -16,14 +16,11 @@
           var width = window.innerWidth-30;
           var height = window.innerHeight-30;
 
-          // alert(height);
-          // alert(width);
-
           // Make sure the points correspond to CP points 
           var ground_start = new Point(0, height);
           var ground_end = new Point(width, height);
           var circle_start = new Point(width / 2, 20);
-          var circle_radius = 10;
+          var circle_radius = 50;
           var user_start = new Point(width / 3, 20);
           var user_radius = 20;
 
@@ -68,13 +65,28 @@
             view.draw();
           }); 
 
-          // Listen for user draw events 
-          socket.on('user-move-backend', function (pos) {
-            user.position.x = pos.x;
-            user.position.y = pos.y;
-
-            view.draw();
+          // Glow red on collision 
+          socket.on('user-collision', function () {
+            circle.fillColor = 'red';
+            setTimeout(function () {
+              circle.fillColor = 'purple';
+            }, 1);
           });
+
+          // For now, cut out the emulator middle man - too laggy 
+          document.onmousemove = function (event) {
+            user.position = new Point(event.x, event.y);
+            view.draw();
+            socket.emit('user-move', {x: event.x, y: event.y});
+          }; 
+
+          // Listen for user draw events 
+          // socket.on('user-move-backend', function (pos) {
+          //   user.position.x = pos.x;
+          //   user.position.y = pos.y;
+
+          //   view.draw();
+          // });
       
   </script>
 

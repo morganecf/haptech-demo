@@ -32,12 +32,12 @@ function hello_world (height, width) {
 	var ground_end = cp.v(width, height);
 	// circle
 	var circle_start = cp.v(width / 2, 20);
-	var circle_radius = 10;
+	var circle_radius = 50;
 	var circle_mass = 50;
 	// user
 	var user_start = cp.v(width / 3, 20);
 	var user_radius = 20;
-	var user_mass = 100;
+	var user_mass = 55;
 
 	// Create space 
 	var space = new cp.Space();
@@ -57,6 +57,8 @@ function hello_world (height, width) {
 	var body = space.addBody(new cp.Body(circle_mass, moment));
 	body.setPos(circle_start);
 
+	body.id = 'body';
+
 	// Add the associated collision shape of the ball 
 	var shape = space.addShape(new cp.CircleShape(body, circle_radius, cp.v(0, 0)));
 	shape.setFriction(1);
@@ -70,18 +72,23 @@ function hello_world (height, width) {
 	user_shape.setFriction(1);
 	user_shape.setElasticity(1);
 
-	// Now bind the user to a mouse constraint
+	user_body.id = 'user';
 
 	// Add a collision handler for the wall and ball 
-	// args: obj1, obj2, preSolve, postSolve, separate
-	space.addCollisionHandler(user_body, body, null, null, function (arbiter, space, data) {
+	// args: obj1, obj2, before, preSolve, postSolve, separate
+	space.addCollisionHandler(user_body, body, null, null, function (arbiter, space) {
 		console.log("collision detected!!");
 	});
 	space.setDefaultCollisionHandler(null, null, function (arbiter, space) {
-		//console.log("collision detected:", arbiter.getA().tc);
-		// console.log(arbiter.totalImpulse());
-		// console.log(arbiter.totalImpulseWithFriction());
-		// console.log(arbiter.totalKE());
+		// TODO: Fix custom collision handler 
+		// In lieu of custom collision handler (not working), get the ids to figure out
+		// which bodies are being acted upon -- THIS IS BAD 
+		var aid = arbiter.getA().body.id;
+		var bid = arbiter.getB().body.id;
+		if ((aid == 'user' && bid == 'body') || (bid == 'user' && aid == 'body')) {
+			console.log("collision between user and circle detected");
+			io.emit('user-collision',  null);
+		}
 	});
 
 	// Now step through the simulation of a ball dropping
@@ -102,7 +109,7 @@ io.on('connection', function (socket) {
 	});
 
 	socket.on('user-move', function (pos) {
-		io.emit('user-move-backend', pos);
+		//io.emit('user-move-backend', pos);
 		if (user_body) user_body.setPos(cp.v(pos.x, pos.y));
 	});
 });
