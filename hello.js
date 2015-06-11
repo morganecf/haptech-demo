@@ -39,7 +39,7 @@ function hello_world (height, width) {
 	// user
 	var user_start = cp.v(width / 3, 20);
 	var user_radius = 20;
-	var user_mass = 55;
+	var user_mass = 1;
 
 	// Create space 
 	space = new cp.Space();
@@ -72,10 +72,10 @@ function hello_world (height, width) {
 	user_body.setPos(user_start);
 	var user_shape = space.addShape(new cp.CircleShape(user_body, user_radius, cp.v(0, 0)));
 	user_shape.setFriction(1);
-	user_shape.setElasticity(1);
+	user_shape.setElasticity(0);
 	user_body.id = 'user';
 
-	// Mouse kinematic body 
+	// Mouse control body 
 	mouse_body = new cp.Body(Infinity, Infinity);
 	mouse_body.setPos(user_start);
 	// Create a joint constraint on the user 
@@ -126,14 +126,26 @@ io.on('connection', function (socket) {
 	});
 
 	socket.on('mousedown', function (pos) {
-		var shape = space.pointQueryFirst(pos, GRABABLE_MASK_BIT, cp.NO_GROUP);
-		if (shape && space) {
-			var body = shape.body;
-			var mouseJoint = new cp.PivotJoint(mouse_body, body, cp.v(0, 0), body.world2Local(pos));
+		if (space) {
+			var shape = space.pointQueryFirst(pos, GRABABLE_MASK_BIT, cp.NO_GROUP);
+			if (shape) {
+				var body = shape.body;
 
-			mouseJoint.maxForce = 50000;
-			mouseJoint.errorBias = Math.pow(1 - 0.15, 60);
-			space.addConstraint(mouseJoint);
+				// Add a joint
+				var mouseJoint = new cp.PivotJoint(mouse_body, body, cp.v(0, 0),  body.world2Local(pos));
+				mouseJoint.maxForce = 50000;
+				// mouseJoint.errorBias = Math.pow(1 - 0.15, 40);
+				mouseJoint.errorBias = 0.0000001;
+				space.addConstraint(mouseJoint);
+
+				// Add a gear - phase and ratio
+				// var mouseGear = new cp.GearJoint(mouse_body, body, 0, 1);
+				// mouseGear.maxForce = 50000;
+				// // mouseGear.errorBias = Math.pow(1 - 0.15, 60);
+				// mouseGear.errorBias = .5;
+				// space.addConstraint(mouseGear);
+
+			}
 		}
 	});
 
