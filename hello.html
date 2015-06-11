@@ -14,10 +14,14 @@
 
   <script canvas="canvas"> 
 
+      // CONSTANTS 
+      var gInfo = {startPos: cp.v(0, 0), endPos: cp.v(500, 0)};
+      var cInfo = {radius: 10, mass: 100, startPos: cp.v(250, 300)};
+
+      // Conversion equations 
       var point2canvas = function(point) {
           return new Point(point.x, (height - point.y));
       };
-
       var canvas2point = function(x, y) {
         return cp.v(x, height - y);
       };
@@ -33,23 +37,17 @@
       paper.setup('canvas');
 
       // Make sure the points correspond to CP points 
-      var ground_start = point2canvas(cp.v(0, 0));
-      var ground_end = point2canvas(cp.v(100, 0));
-      var circle_start = point2canvas(cp.v(50, 15));
-
-      console.log(ground_start);
-      console.log(ground_end);
-      console.log(circle_start);
+      var ground_start = point2canvas(gInfo.startPos);
+      var ground_end = point2canvas(gInfo.endPos);
+      var circle_start = point2canvas(cInfo.startPos);
 
       // Create the ground 
-      // var ground = space.addShape(new cp.SegmentShape(space.staticBody, cp.v(-20, 5), cp.v(20, -5), 0));
       var ground = new Path();
       ground.strokeColor = 'black';
       ground.add(ground_start, ground_end);
 
       // Create the circle
-      // body.setPos(cp.v(0, 15));
-      var radius = 5;
+      var radius = cInfo.radius;
       var circle = new Path.Circle(circle_start, radius);
       circle.fillColor = {
         hue: 60,
@@ -60,16 +58,53 @@
       circle.strokeWidth = 5;
       circle.opacity = 0.7;
 
-      view.draw();
-
       // Tell the backend we are ready to start the simulation 
       socket.emit('ready', 'ready'); 
 
-      // Listen for draw events 
+      var fillcolor = 'black';
+
+      var curr_pos = circle_start;
+
+      // var frameHandler = function (event) {
+      //   socket.on('draw', function (pos) {
+      //     var c = new Path.Circle(point2canvas(pos), 5);
+      //     c.fillColor = fillcolor;
+      //     circle.position = point2canvas(pos); 
+      //   });
+      // };
+
+      view.on('frame', function (event) {
+        circle.position = curr_pos;
+        var c = new Path.Circle(curr_pos, 5);
+        c.fillColor = fillcolor;
+        //console.log(circle.position.y);
+      });
+
       socket.on('draw', function (pos) {
-        circle.position = point2canvas(pos); 
-        view.draw();
-      }); 
+        curr_pos = point2canvas(pos);
+        console.log(curr_pos.y);
+      });
+
+      // Listen for draw events 
+      // socket.on('draw', function (pos) {
+      //   var c = new Path.Circle(point2canvas(pos), 5);
+      //   c.fillColor = fillcolor;
+
+      //   circle.position = point2canvas(pos); 
+      //   //console.log(circle.position.y);
+      //   //console.log(pos.y, circle.position.y);
+      //   // console.log(circle.position);
+      //   // console.log("");
+      //   view.draw();
+      // }); 
+
+      // socket.on('collision', function (pos) {
+      //   fillcolor = 'red';
+      //   var p = point2canvas(pos);
+      //   var c = new Path.Circle(p, 5);
+      //   c.fillColor = fillcolor;
+      //   view.draw();
+      // });
 
   </script>
 
