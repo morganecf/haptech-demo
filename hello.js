@@ -66,19 +66,25 @@ function hello_world (height, width) {
 		// console.log(arbiter.totalKE());
 	});
 
-	// Now step through the simulation of a ball dropping 
-	var time_step = 1.0/60.0;
-
-	for (var time = 0; time < 2; time += time_step) {
+	// Now step through the simulation of a ball dropping
+	setInterval(function () {
 		var pos = body.getPos();
-		var vel = body.getVel();
-
+		space.step(1.0/60.0);
 		io.emit('draw', pos);
+	}, 66);
+	 
+	// var time_step = 1.0/60.0;
 
-		space.step(time_step);
+	// for (var time = 0; time < 2; time += time_step) {
+	// 	var pos = body.getPos();
+	// 	var vel = body.getVel();
 
-		console.log(pos);
-	}
+	// 	io.emit('draw', pos);
+
+	// 	space.step(time_step);
+
+	// 	console.log(pos);
+	// }
 }
 
 // For debugging the simulation only: 

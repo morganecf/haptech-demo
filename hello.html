@@ -51,7 +51,8 @@
             var c = new Path.Circle(pos, 5);
             c.fillColor = 'black';
 
-            circle.position = pos; 
+            circle.position.x = pos.x; 
+            circle.position.y = pos.y;
             view.draw();
           }); 
       
