@@ -24,6 +24,8 @@
           var ground_end = new Point(width, height);
           var circle_start = new Point(width / 2, 20);
           var circle_radius = 10;
+          var user_start = new Point(width / 3, 20);
+          var user_radius = 20;
 
           // Create the ground 
           var ground = new Path();
@@ -32,15 +34,25 @@
 
           // Create the circle
           var circle = new Path.Circle(circle_start, circle_radius);
-          circle.fillColor = 'black';
-          // circle.fillColor = {
-          //   hue: 60,
-          //   saturation: 1,
-          //   brightness: 1
-          // };
-          // circle.strokeColor = 'black';
-          // circle.strokeWidth = 5;
-          // circle.opacity = 0.7;
+          circle.fillColor = {
+            hue: 60,
+            saturation: 1,
+            brightness: 1
+          };
+          circle.strokeColor = 'black';
+          circle.strokeWidth = 3;
+          circle.opacity = 0.7;
+
+          // Create the user 
+          var user = new Path.Circle(user_start, user_radius);
+          user.fillColor = {
+            hue: 320,
+            saturation: 1,
+            brightness: 1
+          };
+          user.strokeColor = 'black';
+          user.strokeWidth = 5;
+          user.opacity = 0.7;
 
           // Tell the backend we are ready to start the simulation
           // and pass any data the simulation might need  
@@ -55,6 +67,14 @@
             circle.position.y = pos.y;
             view.draw();
           }); 
+
+          // Listen for user draw events 
+          socket.on('user-move-backend', function (pos) {
+            user.position.x = pos.x;
+            user.position.y = pos.y;
+
+            view.draw();
+          });
       
   </script>
 

@@ -17,6 +17,8 @@ var cp = require('chipmunk');
 var GRABABLE_MASK_BIT = 1<<31;
 var NOT_GRABABLE_MASK = ~GRABABLE_MASK_BIT;
 
+var user_body = null;
+
 // The hello world simulation 
 function hello_world (height, width) {
 	if (!(height && width)) {
@@ -24,12 +26,18 @@ function hello_world (height, width) {
 		width = 800;
 	}
 
-	// CONSTANTS 
+	/* CONSTANTS */
+	// ground
 	var ground_start = cp.v(0, height);
 	var ground_end = cp.v(width, height);
+	// circle
 	var circle_start = cp.v(width / 2, 20);
 	var circle_radius = 10;
 	var circle_mass = 50;
+	// user
+	var user_start = cp.v(width / 3, 20);
+	var user_radius = 20;
+	var user_mass = 100;
 
 	// Create space 
 	var space = new cp.Space();
@@ -54,13 +62,23 @@ function hello_world (height, width) {
 	shape.setFriction(1);
 	shape.setElasticity(1);
 
+	// Add user 
+	var user_moment = cp.momentForCircle(user_mass, 0, user_radius, cp.v(0, 0));
+	user_body = space.addBody(new cp.Body(user_mass, user_moment));
+	user_body.setPos(user_start);
+	var user_shape = space.addShape(new cp.CircleShape(user_body, user_radius, cp.v(0, 0)));
+	user_shape.setFriction(1);
+	user_shape.setElasticity(1);
+
+	// Now bind the user to a mouse constraint
+
 	// Add a collision handler for the wall and ball 
 	// args: obj1, obj2, preSolve, postSolve, separate
-	// space.addCollisionHandler(ground, body, null, null, function (arbiter, space, data) {
-	// 	console.log("collision detected");
-	// });
+	space.addCollisionHandler(user_body, body, null, null, function (arbiter, space, data) {
+		console.log("collision detected!!");
+	});
 	space.setDefaultCollisionHandler(null, null, function (arbiter, space) {
-		console.log("collision detected:", arbiter.getA().tc);
+		//console.log("collision detected:", arbiter.getA().tc);
 		// console.log(arbiter.totalImpulse());
 		// console.log(arbiter.totalImpulseWithFriction());
 		// console.log(arbiter.totalKE());
@@ -72,19 +90,6 @@ function hello_world (height, width) {
 		space.step(1.0/60.0);
 		io.emit('draw', pos);
 	}, 66);
-	 
-	// var time_step = 1.0/60.0;
-
-	// for (var time = 0; time < 2; time += time_step) {
-	// 	var pos = body.getPos();
-	// 	var vel = body.getVel();
-
-	// 	io.emit('draw', pos);
-
-	// 	space.step(time_step);
-
-	// 	console.log(pos);
-	// }
 }
 
 // For debugging the simulation only: 
@@ -94,6 +99,11 @@ function hello_world (height, width) {
 io.on('connection', function (socket) {
 	socket.on('ready', function (dimensions) {
 		hello_world(dimensions.height, dimensions.width);
+	});
+
+	socket.on('user-move', function (pos) {
+		io.emit('user-move-backend', pos);
+		if (user_body) user_body.setPos(cp.v(pos.x, pos.y));
 	});
 });
 

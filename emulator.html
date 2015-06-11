@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+  <head>
+    <title> Haptic Emulator </title>
+
+    <style> 
+      #boardport { border: solid black 2px; }
+    </style>
+
+    <!-- Paper JS SVG library --> 
+    <script src="paper-js/dist/paper-full.min.js"></script>
+    <!-- Socket client --> 
+    <script src="socket.io.js"></script>
+    <!-- Our emulator --> 
+    <script type="text/paperscript" canvas="boardport"> 
+
+      // Load the socket client
+      var socket = io();
+
+      // Create the circle - you! the user!  
+      var user = new Path.Circle(new Point(0, 0), 35);
+      // Customizing you 
+      user.fillColor = 'grey';
+      user.strokeColor = 'black';
+      user.strokeWidth = 5;
+      user.opacity = 0.7;
+
+      view.draw();
+
+      // Configure mouse listener to update your position
+      // on mouse move, and send to socket
+      document.onmousemove = function (event) {
+        user.position = new Point(event.x, event.y);
+        view.draw();
+        socket.emit('user-move', {x: event.x, y: event.y});
+      }; 
+
+    </script>
+
+
+  </head>
+
+  <body>
+    <canvas id="boardport" width="1000" height="1400" keepalive="true"></canvas>
+  </body>
+
+</html>
