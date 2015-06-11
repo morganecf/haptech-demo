@@ -98,9 +98,9 @@
 
           canvas.onmouseup = function (event) {
             clicked = false;
-            mouse.position = user.position;
-            view.draw();
-            socket.emit('mouseup', {x: event.x, y: event.y});
+            //mouse.position = user.position;
+            //view.draw();
+            //socket.emit('mouseup', {x: event.x, y: event.y});
           };
 
           // Listen for user draw events 
