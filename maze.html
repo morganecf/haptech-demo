@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+  <head>
+    <title> Chipmunk Hello World </title>
+  
+  <script src="paper-js/dist/paper-full.min.js"></script>
+  <script src="node_modules/chipmunk/cp.min.js"></script>
+  <script src="socket.io.js"></script>
+
+  <script type="text/paperscript" canvas="canvas"> 
+
+          // The socket client 
+          var socket = io();
+
+          // CONSTANTS 
+          var width = window.innerWidth - 30;
+          var height = window.innerHeight - 30;
+
+          // Create the maze outline 
+          var maze = [];
+          var mazeSegment = function (x1, y1, x2, y2) {
+            var segment = new Path();
+            segment.strokeColor = 'black';
+            segment.strokeWidth = 4;
+            segment.opacity = 0.8;
+            segment.add(new Point(x1, y1), new Point(x2, y2));
+            maze.push(segment);
+            return segment;
+          };
+
+          // All maze line segments are in function of these two variables, plus width + height
+          var padding = 30;
+          var door = 100;
+
+          // The maze is comprised of 15 line segments 
+          var s1 = mazeSegment(padding, height, width - padding, height);   // bottom
+          var s2 = mazeSegment(padding, padding, width - door - padding, padding);  // top 
+          var s3 = mazeSegment(padding, padding, padding, padding * 4);  // far left top 
+          var s4 = mazeSegment(padding, (padding * 4) + door, padding, height); // far left bottom 
+          var s5 = mazeSegment(width - door - padding, padding, width - door - padding, height / 1.5);  // inner right top
+          var s6 = mazeSegment(width - padding, height, width - padding, padding); // far right 
+          var s7 = mazeSegment(width - door - padding, height / 1.5, width - door - (padding * 7), height / 1.5);
+          var s8 = mazeSegment(width - door - (padding * 7), height / 1.5, width - door - (padding * 7), padding + door);
+          var s9 = mazeSegment(width - door - (padding * 7), padding + door, padding + door * 1.5, padding + door);
+          var s10 = mazeSegment(padding + door * 4, padding + door, padding + door * 4, height - door * 3);
+          var s11 = mazeSegment(width * .6, height, width * .6, height - door);
+          var s12 = mazeSegment(width * .8, height - door, width * .5, height - door);
+          var s13 = mazeSegment(width * .5, height - door, width * .5, height - (door * 3.5));
+          var s14 = mazeSegment(width * .5, height - (door * 1.75), width * .15, height - (door * 1.75));   
+          var s15 = mazeSegment(padding, (padding * 4) + door, padding + door, (padding * 4) + door); // liftoff
+
+          // TODO: leave tiny sparkling trail that fades 
+
+          // Create the user 
+          var user_radius = 25;
+          var user_start = new Point(padding + user_radius, (padding * 4) + door - user_radius);
+          var user = new Path.Circle(user_start, user_radius);
+          user.fillColor = 'purple';
+          user.strokeColor = 'black';
+          user.strokeWidth = 1;
+          user.opacity = 0.85;
+
+          // Create the mouse 
+          var mouse = new Path.Circle(user_start, 5);
+          mouse.fillColor = 'grey';
+          mouse.strokeColor = 'black';
+
+          // Tell the backend we are ready to start the simulation
+          // and pass any data the simulation might need  
+          socket.emit('ready', {height: height, width: width}); 
+
+          // Listen for draw events 
+          socket.on('draw', function (pos) {
+            user.position.x = pos.x;
+            user.position.y = pos.y;
+            view.draw();
+          }); 
+
+          // Have walls glow red upon collision 
+          socket.on('wall-collision', function (wall_id) {
+            maze[wall_id - 1].strokeColor = 'red';
+            setTimeout(function () {
+              maze[wall_id - 1].strokeColor = 'black';
+            }, 5);
+          });
+
+          // Keeps track of when user is dragging circle
+          var clicked = false;
+
+          // Keeps track of the trail left behind - only 30 at a time
+          var gretel = [];
+
+          // User has clicked 
+          canvas.onmousedown = function (event) {
+            event.preventDefault();
+            socket.emit('mousedown', {x: event.x, y: event.y});
+            clicked = true;
+          }; 
+
+          // User is dragging
+          canvas.onmousemove = function (event) {
+            if (clicked) {
+              mouse.position = new Point(event.x, event.y);
+              view.draw();
+              socket.emit('mousemove', {x: event.x, y: event.y});
+
+              // Leave behind a little Hansel and Gretel trail 
+              var c = new Path.Circle(user.position, 5);
+              c.fillColor = '#DAA520';
+              c.opacity = 0.9;
+              gretel.push(c);
+              
+              // Max of 30 crumbs
+              if (gretel.length > 30) gretel.shift().opacity = 0;
+
+              // Make them decreasingly more translucent
+              for (var i = 0; i < gretel.length; i++) {
+                gretel[i].opacity = i * .0333;
+              }
+            }
+          };
+
+          // User no longer draggging
+          canvas.onmouseup = function (event) {
+            clicked = false;
+
+            // Make the crumbs disappear after a few seconds
+            setTimeout(function () {
+              gretel.forEach(function (crumb) { crumb.opacity = 0; });
+            }, 3000);
+          };
+      
+  </script>
+
+  </head>
+
+  <body>   
+      <canvas id="canvas" width="1500" height="1400" keepalive="true"></canvas>
+  </body>
+
+  </html>
