@@ -79,11 +79,18 @@ function maze (height, width) {
 	mouse_body = new cp.Body(Infinity, Infinity);
 	mouse_body.setPos(user_start);
 
+	// Collision handler won't work between static and dynamic bodies (chipmunk specifically
+		// doesn't check for collision w/ static bodies for efficiency )
+
 	// Add a collision handler for the wall and ball - THIS IS DEFAULT ONE 
 	space.setDefaultCollisionHandler(null, null, function (arbiter, space) {
 		// TODO: get custom collision handler working
 		var wall_id = arbiter.getA().id ? arbiter.getA().id : arbiter.getB().id;
 		io.emit('wall-collision', wall_id);
+
+		// momentum = mass * velocity
+		// impulse = integral of force over time interval in which it acts 
+		// impulse = change in momentum 
 	});
 
 	// Now step through the simulation 
@@ -96,6 +103,8 @@ function maze (height, width) {
 
 // Start the simulation as soon as front end has loaded 
 io.on('connection', function (socket) {
+
+	var constraints = {};
 
 	// Wait for the front end to be ready 
 	socket.on('ready', function (dimensions) {
@@ -120,6 +129,12 @@ io.on('connection', function (socket) {
 				mouseJoint.maxForce = 50000;
 				mouseJoint.errorBias = 0.0000001;
 				space.addConstraint(mouseJoint);
+				constraints.mouse_joint = mouseJoint;
+
+				// Add a spring 
+				// rest length, stiffness, damping - 0, 100, 20 in example.
+				var spring = new cp.DampedSpring(mouse_body, body, cp.v(0, 0), body.world2Local(pos), 0, 100, 20);
+				space.addConstraint(spring);
 			}
 		}
 	});
@@ -128,6 +143,11 @@ io.on('connection', function (socket) {
 	socket.on('mousemove', function (pos) {
 		if (mouse_body) mouse_body.setPos(cp.v(pos.x, pos.y));
 	});
+
+	// Release the joint constraint once the user unclicks 
+	// socket.on('mouseup', function () {
+	// 	space.removeConstraint(constraints.mouse_joint);
+	// });
 });
 
 // Listen to port 3000
