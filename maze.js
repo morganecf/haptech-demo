@@ -20,6 +20,10 @@ var cp = require('chipmunk');
 var GRABABLE_MASK_BIT = 1<<31;
 var NOT_GRABABLE_MASK = ~GRABABLE_MASK_BIT;
 
+var simulation_timestep = 1.0 / 60.0;		// 1/seconds
+var interval_step = 66;						// milliseconds 
+
+// Global variables
 var mouse_body = null;
 var space = null;
 
@@ -88,17 +92,27 @@ function maze (height, width) {
 		var wall_id = arbiter.getA().id ? arbiter.getA().id : arbiter.getB().id;
 		io.emit('wall-collision', wall_id);
 
-		// momentum = mass * velocity
-		// impulse = integral of force over time interval in which it acts 
-		// impulse = change in momentum 
+		var impulse = arbiter.totalImpulse();
+		var impulse_friction = arbiter.totalImpulseWithFriction();
+		var ke = arbiter.totalKE();
+
+		var force = {x: impulse.x / simulation_timestep, y: impulse.y / simulation_timestep};
+		var force_friction = {x: impulse_friction.x / simulation_timestep, y: impulse_friction.y / simulation_timestep};
+
+		console.log('Force:', force);
+		console.log('Force w/ friction:', force_friction);
+		console.log('Kinetic Energy:', ke);
+		
+		// impulse = force * change in time 
+		// NOTE : contact point set contains the collision point normal and penetration distance 
 	});
 
 	// Now step through the simulation 
 	setInterval(function () {
 		var pos = user_body.getPos();
-		space.step(1.0/60.0);
+		space.step(simulation_timestep);
 		io.emit('draw', pos);
-	}, 66);
+	}, interval_step);
 }
 
 // Start the simulation as soon as front end has loaded 
