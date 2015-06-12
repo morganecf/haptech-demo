@@ -105,7 +105,7 @@
               socket.emit('mousemove', {x: event.x, y: event.y});
 
               // Leave behind a little Hansel and Gretel trail 
-              var c = new Path.Circle(user.position, 5);
+              var c = new Path.Circle(user.position, user_radius - 5);
               c.fillColor = '#DAA520';
               c.opacity = 0.9;
               gretel.push(c);
@@ -115,7 +115,7 @@
 
               // Make them decreasingly more translucent
               for (var i = 0; i < gretel.length; i++) {
-                gretel[i].opacity = i * .0333;
+                gretel[i].opacity = (i * .0333) / 2;
               }
             }
           };
@@ -124,10 +124,13 @@
           canvas.onmouseup = function (event) {
             clicked = false;
 
+            // Send a mouse up event 
+            socket.emit('mouseup');
+
             // Make the crumbs disappear after a few seconds
             setTimeout(function () {
               gretel.forEach(function (crumb) { crumb.opacity = 0; });
-            }, 3000);
+            }, 1000);
           };
       
   </script>
