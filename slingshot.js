@@ -56,6 +56,7 @@ function slingshot (height, width) {
 	setInterval(function () {
 		if (body) {
 			var pos = body.getPos();
+			console.log(pos);
 			space.step(simulation_timestep);
 			io.emit('draw', pos);
 		}
@@ -85,7 +86,6 @@ io.on('connection', function (socket) {
 	socket.on('mousedown', function (pos) {
 		console.log("mouse down");
 		if (space) {
-
 			// The body we're going to throw 
 		 	var start = cp.v((width * .45) + 20, (slingshotPath(width * .45)) - 8);
 		 	var mass = 3, radius = 20;
@@ -108,10 +108,9 @@ io.on('connection', function (socket) {
 
 	// Update the bird body position 
 	socket.on('mousemove', function (pos) {
-		console.log("mouse move");
 		if (body) {
-			console.log("setting position");
 			body.setPos(cp.v(pos.x, pos.y));
+			console.log(body.getPos());
 		}
 	});
 

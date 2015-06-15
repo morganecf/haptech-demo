@@ -64,56 +64,53 @@
   	canvas.onmousedown = function (event) {
   		//event.preventDefault();
   		// Only send mouse down event if the mouse is touching the bird  
-  		console.log('mouse down');
   		if (touchingBird(event.x, event.y)) {
-  			console.log('touching');
   			socket.emit('mousedown', {x: event.x, y: event.y});
   		}
   	};
   	canvas.onmousemove = function (event) {
-  		console.log(touchingBird(event.x, event.y), event.x, event.y);
+  		//console.log('mouse move');
+  		if (pulling) {
+  			apex.point.y = event.y;
+  			apex.point.x = event.x;
+  			bird.position.y = event.y;
+  			bird.position.x = event.x;
+
+  			socket.emit('mousemove', {x: event.x, y: event.y});
+  		}
   	};
-  	// canvas.onmousemove = function (event) {
-  	// 	//console.log('mouse move');
-  	// 	if (pulling) {
-  	// 		// apex.point.y = event.y;
-  	// 		// apex.point.x = event.x;
-  	// 		// bird.position.y = event.y;
-  	// 		// bird.position.x = event.x;
+  	canvas.onmouseover = function (event) {
+  		if (pulling) socket.emit('mousemove', {x: event.x, y: event.y});
+  	};
+  	canvas.onmouseup = function (event) {
+  		pulling = false;
+  		released = true;
 
-  	// 		socket.emit('mousemove', {x: event.x, y: event.y});
-  	// 		console.log('pulling');
-  	// 	}
-  	// };
-  	// canvas.onmouseup = function (event) {
-  	// 	pulling = false;
-  	// 	released = true;
+  		socket.emit('mouseup', {x: event.x, y: event.y});
+  	};
 
-  	// 	socket.emit('mouseup', {x: event.x, y: event.y});
-  	// 	console.log('mouseup');
-  	// };
+  	// Tell the frontend we are ready 
+  	socket.emit('ready', {width: width, height: height});
 
-  	// // Tell the frontend we are ready 
-  	// socket.emit('ready', {width: width, height: height});
+  	// Backend has determined we're dragging the bird 
+  	socket.on('pulling', function () {
+  		pulling = true;
+  	});
 
-  	// // Backend has determined we're dragging the bird 
-  	// socket.on('pulling', function () {
-  	// 	console.log('pulling');
-  	// 	pulling = true;
-  	// });
+  	socket.on('draw', function (pos) {
+  		//console.log('drawing?');
+  		if (released) {
+  			//console.log('drawing from simulation - released');
+  			// Slingshot goes back to original position
+  			apex.point.y = start.y;
+  			apex.point.x = start.x;
+  			// Bird goes flying according to simulation 
+  			bird.position.y = pos.y;
+  			bird.position.x = pos.x;
 
-  	// socket.on('draw', function (pos) {
-  	// 	//console.log('drawing?');
-  	// 	if (released) {
-  	// 		//console.log('drawing from simulation - released');
-  	// 		// Slingshot goes back to original position
-  	// 		apex.point.y = start.y;
-  	// 		apex.point.x = start.x;
-  	// 		// Bird goes flying according to simulation 
-  	// 		bird.position.y = pos.y;
-  	// 		bird.position.x = pos.x;
-  	// 	}
-  	// });
+  			view.draw();
+  		}
+  	});
 
   </script>
 
