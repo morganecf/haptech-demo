@@ -56,57 +56,64 @@
 		return r <= Math.pow(radius, 2);
 	};
 
+	console.log(touchingBird(470, 290));
+
   	// Functionality to drag the slingshot 
   	var pulling = false;
   	var released = false;
   	canvas.onmousedown = function (event) {
-  		event.preventDefault();
+  		//event.preventDefault();
   		// Only send mouse down event if the mouse is touching the bird  
+  		console.log('mouse down');
   		if (touchingBird(event.x, event.y)) {
+  			console.log('touching');
   			socket.emit('mousedown', {x: event.x, y: event.y});
   		}
   	};
   	canvas.onmousemove = function (event) {
-  		//console.log('mouse move');
-  		if (pulling) {
-  			// apex.point.y = event.y;
-  			// apex.point.x = event.x;
-  			// bird.position.y = event.y;
-  			// bird.position.x = event.x;
-
-  			socket.emit('mousemove', {x: event.x, y: event.y});
-  			console.log('pulling');
-  		}
+  		console.log(touchingBird(event.x, event.y), event.x, event.y);
   	};
-  	canvas.onmouseup = function (event) {
-  		pulling = false;
-  		released = true;
+  	// canvas.onmousemove = function (event) {
+  	// 	//console.log('mouse move');
+  	// 	if (pulling) {
+  	// 		// apex.point.y = event.y;
+  	// 		// apex.point.x = event.x;
+  	// 		// bird.position.y = event.y;
+  	// 		// bird.position.x = event.x;
 
-  		socket.emit('mouseup', {x: event.x, y: event.y});
-  		console.log('mouseup');
-  	};
+  	// 		socket.emit('mousemove', {x: event.x, y: event.y});
+  	// 		console.log('pulling');
+  	// 	}
+  	// };
+  	// canvas.onmouseup = function (event) {
+  	// 	pulling = false;
+  	// 	released = true;
 
-  	// Tell the frontend we are ready 
-  	socket.emit('ready', {width: width, height: height});
+  	// 	socket.emit('mouseup', {x: event.x, y: event.y});
+  	// 	console.log('mouseup');
+  	// };
 
-  	// Backend has determined we're dragging the bird 
-  	socket.on('pulling', function () {
-  		console.log('pulling');
-  		pulling = true;
-  	});
+  	// // Tell the frontend we are ready 
+  	// socket.emit('ready', {width: width, height: height});
 
-  	socket.on('draw', function (pos) {
-  		//console.log('drawing?');
-  		if (released) {
-  			//console.log('drawing from simulation - released');
-  			// Slingshot goes back to original position
-  			apex.point.y = start.y;
-  			apex.point.x = start.x;
-  			// Bird goes flying according to simulation 
-  			bird.position.y = pos.y;
-  			bird.position.x = pos.x;
-  		}
-  	});
+  	// // Backend has determined we're dragging the bird 
+  	// socket.on('pulling', function () {
+  	// 	console.log('pulling');
+  	// 	pulling = true;
+  	// });
+
+  	// socket.on('draw', function (pos) {
+  	// 	//console.log('drawing?');
+  	// 	if (released) {
+  	// 		//console.log('drawing from simulation - released');
+  	// 		// Slingshot goes back to original position
+  	// 		apex.point.y = start.y;
+  	// 		apex.point.x = start.x;
+  	// 		// Bird goes flying according to simulation 
+  	// 		bird.position.y = pos.y;
+  	// 		bird.position.x = pos.x;
+  	// 	}
+  	// });
 
   </script>
 
