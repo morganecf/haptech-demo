@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+  <head>
+  
+  <script src="paper-js/dist/paper-full.min.js"></script>
+  <script type="text/paperscript" canvas="canvas"> 
+
+  	// Constants
+  	var height = view.size.height;
+  	var width = view.size.width;
+  	var arm_size = 300; 
+
+  	// Function to create a basic black line segment 
+  	var segment = function (x1, y1, x2, y2) {
+  		var seg = new Path();
+	  	seg.strokeColor = 'black';
+	  	seg.strokeWidth = 4;
+	  	seg.opacity = 0.8;
+	  	seg.add(new Point(x1, y1), new Point(x2, y2));
+  	};
+
+  	// Somewhat arbitrary 
+  	var slingshotPath = function (x) {
+  		return -50 * Math.sin(x / 100) + (height - arm_size);
+  	}
+
+  	// The ground 
+  	var ground = segment(0, height, width, height);
+
+  	// Create the two slingshot arms
+ 	var armL = segment(width * .33, height, width * .33, height - arm_size);
+ 	var armR = segment(width * .63, height, width * .63, height - arm_size);
+
+  	// Create the slingshot 
+  	var slingshot = new Path();
+  	slingshot.add(width * .33, height - arm_size);
+	var apex = slingshot.add(new Point(width * .45, slingshotPath(width * .45)));
+	slingshot.add(width * .63, height - arm_size)
+	slingshot.strokeColor = 'brown';
+	slingshot.strokeWidth = 10;
+	slingshot.smooth();
+
+  	// Functionality to drag the slingshot 
+  	var moving = false;
+  	canvas.onmousedown = function (event) {
+  		event.preventDefault();
+  		var y = slingshotPath(event.x);
+  		// Somewhat lenient 
+  		if (Math.abs(event.y - y) <= 10) moving = true;
+  	};
+  	canvas.onmousemove = function (event) {
+  		if (moving) {
+  			apex.point.y = event.y;
+  			apex.point.x = event.x;
+  		}
+  	};
+  	canvas.onmouseup = function (event) {
+  		moving = false;
+  	};
+
+  </script>
+
+</head>
+
+<body>
+	<canvas id="canvas" width="1000" height="550" keepalive="true"></canvas>
+</body>
+
+</html>
