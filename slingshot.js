@@ -84,7 +84,6 @@ io.on('connection', function (socket) {
  
  	// On mouse down, create the bird and spring 
 	socket.on('mousedown', function (pos) {
-		console.log("mouse down");
 		if (space) {
 			// The body we're going to throw 
 		 	var start = cp.v((width * .45) + 20, (slingshotPath(width * .45)) - 8);
@@ -108,19 +107,12 @@ io.on('connection', function (socket) {
 
 	// Update the bird body position 
 	socket.on('mousemove', function (pos) {
-		if (body) {
-			body.setPos(cp.v(pos.x, pos.y));
-			console.log(body.getPos());
-		}
+		if (body) body.setPos(cp.v(pos.x, pos.y));
 	});
 
 	// Release the spring once the user unclicks so that bird can go flying 
 	socket.on('mouseup', function () {
-		console.log("mouse up");
-		if (space) {
-			console.log("removing constraint");
-			space.removeConstraint(constraints.spring);
-		}
+		if (space) space.removeConstraint(constraints.spring);
 	});
 });
 
