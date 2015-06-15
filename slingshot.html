@@ -50,21 +50,24 @@
 	var bird = new Path.Circle(start, radius);
 	bird.fillColor = 'red';
 
+	// Determines if the point is in the circle
+	var touchingBird = function (x, y) {
+		var r = Math.pow(bird.position.x - x, 2) + Math.pow(bird.position.y - y, 2);
+		return r <= Math.pow(radius, 2);
+	};
+
   	// Functionality to drag the slingshot 
   	var pulling = false;
   	var released = false;
   	canvas.onmousedown = function (event) {
   		event.preventDefault();
-  		// TODO: Change this to be in the circle
-  		// var y = slingshotPath(event.x);
-  		// // Somewhat lenient 
-  		// if (Math.abs(event.y - y) <= 10) moving = true;
-
-  		console.log('mouse down');
-  		socket.emit('mousedown', {x: event.x, y: event.y});
+  		// Only send mouse down event if the mouse is touching the bird  
+  		if (touchingBird(event.x, event.y)) {
+  			socket.emit('mousedown', {x: event.x, y: event.y});
+  		}
   	};
   	canvas.onmousemove = function (event) {
-  		console.log('mouse move');
+  		//console.log('mouse move');
   		if (pulling) {
   			// apex.point.y = event.y;
   			// apex.point.x = event.x;
@@ -93,9 +96,9 @@
   	});
 
   	socket.on('draw', function (pos) {
-  		console.log('drawing?');
+  		//console.log('drawing?');
   		if (released) {
-  			console.log('drawing from simulation - released');
+  			//console.log('drawing from simulation - released');
   			// Slingshot goes back to original position
   			apex.point.y = start.y;
   			apex.point.x = start.x;

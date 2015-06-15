@@ -59,20 +59,6 @@ function slingshot (height, width) {
  	var armL = segment(width * .33, height, width * .33, height - arm_size);
  	var armR = segment(width * .63, height, width * .63, height - arm_size); 
 
- 	// The body we're going to throw 
- 	// var apex = slingshot.add(new Point(width * .45, slingshotPath(width * .45)));
- 	var start = cp.v((width * .45) + 20, (slingshotPath(width * .45)) - 8);
- 	var mass = 3, radius = 20;
- 	var momentum = cp.momentForCircle(mass, 0, radius, cp.v(0, 0));
- 	body = space.addBody(new cp.Body(mass, momentum));
- 	var shape = space.addShape(new cp.CircleShape(body, radius, cp.v(0, 0)));
-
- 	// Slingshot is modeled as a simplified spring attached to invisible body in the middle of the two arms 
- 	var spring_body = new cp.Body(Infinity, Infinity);
-  	var spring = new cp.DampedSpring(spring_body, body, cp.v(0, 0), body.world2Local(start), 0, 100, 20);
-	space.addConstraint(spring);
-	constraints.spring = spring;
-
 	// Step through the simulation 
 	setInterval(function () {
 		var pos = body.getPos();
@@ -90,35 +76,45 @@ io.on('connection', function (socket) {
 		slingshot(dimensions.height, dimensions.width);
 	});
  
- 	// On mouse down, bird must move with the mouse 
+ 	// On mouse down, create the bird and spring 
 	socket.on('mousedown', function (pos) {
 		console.log("mouse down");
 		if (space) {
-			var shape = space.pointQueryFirst(pos, GRABABLE_MASK_BIT, cp.NO_GROUP);
-			if (shape) {
-				console.log("pulling");
-				io.emit('pulling');
-			}
+			io.emit('pulling');
+
+			// The body we're going to throw 
+		 	var start = cp.v((width * .45) + 20, (slingshotPath(width * .45)) - 8);
+		 	var mass = 3, radius = 20;
+		 	var momentum = cp.momentForCircle(mass, 0, radius, cp.v(0, 0));
+		 	body = space.addBody(new cp.Body(mass, momentum));
+		 	body.setPos(start);
+		 	var shape = space.addShape(new cp.CircleShape(body, radius, cp.v(0, 0)));
+
+			// Slingshot is modeled as a simplified spring attached to invisible body in the middle of the two arms 
+		 // 	var spring_body = new cp.Body(Infinity, Infinity);
+		 //  	var spring = new cp.DampedSpring(spring_body, body, cp.v(0, 0), body.world2Local(start), 0, 100, 20);
+			// space.addConstraint(spring);
+			// constraints.spring = spring;
 		}
 	});
 
 	// Update the bird body position 
-	socket.on('mousemove', function (pos) {
-		console.log("mouse move");
-		if (body) {
-			console.log("setting position");
-			body.setPos(cp.v(pos.x, pos.y));
-		}
-	});
+	// socket.on('mousemove', function (pos) {
+	// 	console.log("mouse move");
+	// 	if (body) {
+	// 		console.log("setting position");
+	// 		body.setPos(cp.v(pos.x, pos.y));
+	// 	}
+	// });
 
 	// Release the spring once the user unclicks so that bird can go flying 
-	socket.on('mouseup', function () {
-		console.log("mouse up");
-		if (space) {
-			console.log("removing constraint");
-			space.removeConstraint(constraints.spring);
-		}
-	});
+	// socket.on('mouseup', function () {
+	// 	console.log("mouse up");
+	// 	if (space) {
+	// 		console.log("removing constraint");
+	// 		space.removeConstraint(constraints.spring);
+	// 	}
+	// });
 });
 
 // Listen to port 3000
