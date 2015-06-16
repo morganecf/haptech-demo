@@ -1,9 +1,25 @@
 <!doctype html>
 <html>
   <head>
+
+  <link href="bootstrap.min.css" rel="stylesheet"/>
+
+  <style> 
+  		#large { width: 80px; height: 80px; font-size: 40px; }
+  		#medium { width: 60px; height: 60px; font-size: 30px; }
+  		#small { width: 40px; height: 40px; font-size: 20px; }
+  		.btn-default { height: 50px; }
+  		.glyphicon-resize-full { font-color: "rgb(51, 51, 51)"; opacity: 0.5; }
+  		.glyphicon-resize-full:hover { opacity: 0.9; }
+  		#glyph-large { margin-top: 10px; }
+  		#glyph-medium { margin-top: 7px; }
+  		#glyph-small { margin-top: 2px; margin-left: -3px;}
+  </style>
   
   <script src="paper-js/dist/paper-full.min.js"></script>
   <script src="socket.io.js"></script>
+  <script src="jquery-1.11.3.min.js"></script>
+
   <script type="text/paperscript" canvas="canvas"> 
 
   	// The socket 
@@ -36,8 +52,8 @@
   		components.start = {};
 
   		var mid = height / 2;
-  		var a = mid + ((size / 2) * mid);
-  		var b = mid - ((size / 2) * mid);
+  		var a = mid + ((size / 2.0) * mid);
+  		var b = mid - ((size / 2.0) * mid);
 
   		// Ground 
   		components.ground = {
@@ -86,82 +102,100 @@
   		return components;
   	};
 
-  	// Somewhat arbitrary 
-  	// var slingshotPath = function (x) {
-  	// 	return -50 * Math.sin(x / 100) + (height - arm_size);
-  	// };
+  	/* Call this with a certain size to run the whole simulation */
+  	function run (size) {
+  		console.log("running with size:", size);
 
-  	// Set up the slingshot arena 
-	var arena = setup(small);
+  		// Set up the slingshot arena 
+		var arena = setup(size);
 
-	arena.ground.create();
-	arena.armTop.create();
-	arena.armBottom.create();
-	
-	var slingshot = arena.slingshot();
-	var bird = arena.bird();
+		arena.ground.create();
+		arena.armTop.create();
+		arena.armBottom.create();
+		
+		var slingshot = arena.slingshot();
+		var bird = arena.bird();
 
-	// Determines if the point is in the circle
-	var touchingBird = function (x, y) {
-		var r = Math.pow(bird.position.x - x, 2) + Math.pow(bird.position.y - y, 2);
-		return r <= Math.pow(bird_radius, 2);
-	};
+		// Determines if the point is in the circle
+		var touchingBird = function (x, y) {
+			var r = Math.pow(bird.position.x - x, 2) + Math.pow(bird.position.y - y, 2);
+			return r <= Math.pow(bird_radius, 2);
+		};
 
-	arena.width = width;
-	arena.height = height;
+		arena.width = width;
+		arena.height = height;
 
-	console.log(arena);
+		// Tell the backend we're ready 
+		console.log("emitting ready");
+		socket.emit('ready', JSON.stringify(arena));
 
-	// Tell the backend we're ready 
-	socket.emit('ready', JSON.stringify(arena));
+	  	// Functionality to drag the slingshot 
+	  	var pulling = false;
+	  	var released = false;
+	  	canvas.onmousedown = function (event) {
+	  		//event.preventDefault();
+	  		// Only send mouse down event if the mouse is touching the bird  
+	  		if (touchingBird(event.x, event.y)) {
+	  			socket.emit('mousedown', {x: event.x, y: event.y});
+	  		}
+	  	};
+	  	canvas.onmousemove = function (event) {
+	  		if (pulling) {
+	  			slingshot.apex.point.y = event.y;
+	  			slingshot.apex.point.x = event.x;
+	  			bird.position.y = event.y;
+	  			bird.position.x = event.x;
 
-  	// Functionality to drag the slingshot 
-  	var pulling = false;
-  	var released = false;
-  	canvas.onmousedown = function (event) {
-  		//event.preventDefault();
-  		// Only send mouse down event if the mouse is touching the bird  
-  		if (touchingBird(event.x, event.y)) {
-  			socket.emit('mousedown', {x: event.x, y: event.y});
-  		}
-  	};
-  	canvas.onmousemove = function (event) {
-  		if (pulling) {
-  			slingshot.apex.point.y = event.y;
-  			slingshot.apex.point.x = event.x;
-  			bird.position.y = event.y;
-  			bird.position.x = event.x;
+	  			socket.emit('mousemove', {x: event.x, y: event.y});
+	  		}
+	  	};
+	  	canvas.onmouseover = function (event) {
+	  		if (pulling) socket.emit('mousemove', {x: event.x, y: event.y});
+	  	};
+	  	canvas.onmouseup = function (event) {
+	  		pulling = false;
+	  		released = true;
 
-  			socket.emit('mousemove', {x: event.x, y: event.y});
-  		}
-  	};
-  	canvas.onmouseover = function (event) {
-  		if (pulling) socket.emit('mousemove', {x: event.x, y: event.y});
-  	};
-  	canvas.onmouseup = function (event) {
-  		pulling = false;
-  		released = true;
+	  		socket.emit('mouseup', {x: event.x, y: event.y});
+	  	};
 
-  		socket.emit('mouseup', {x: event.x, y: event.y});
-  	};
+	  	// Backend has determined we're dragging the bird 
+	  	socket.on('pulling', function () {
+	  		pulling = true;
+	  	});
 
-  	// Backend has determined we're dragging the bird 
-  	socket.on('pulling', function () {
-  		pulling = true;
+	  	socket.on('draw', function (pos) {
+	  		if (released) {
+	  			// Slingshot goes back to original position
+	  			slingshot.apex.point.y = arena.start.y;
+	  			slingshot.apex.point.x = arena.start.x;
+
+	  			// Bird goes flying according to simulation 
+	  			bird.position.y = pos.y;
+	  			bird.position.x = pos.x;
+
+	  			view.draw();
+	  		}
+	  	});
+  	}
+
+  	// Initialize with smallest size 
+  	run(small);
+
+  	// Resize functionality
+  	$("#small").click(function () {
+  		paper.project.clear();
+  		run(small);
   	});
 
-  	socket.on('draw', function (pos) {
-  		if (released) {
-  			// Slingshot goes back to original position
-  			slingshot.apex.point.y = arena.start.y;
-  			slingshot.apex.point.x = arena.start.x;
+  	$("#medium").click(function () {
+  		paper.project.clear();
+  		run(medium);
+  	});
 
-  			// Bird goes flying according to simulation 
-  			bird.position.y = pos.y;
-  			bird.position.x = pos.x;
-
-  			view.draw();
-  		}
+  	$("#large").click(function () {
+  		paper.project.clear();
+  		run(large);
   	});
 
   </script>
@@ -169,7 +203,19 @@
 </head>
 
 <body>
+	<!-- the slingshot canvas --> 
 	<canvas id="canvas" width="1000" height="550" keepalive="true"></canvas>
+	<!-- the resize buttons --> 
+	
+	<button class="btn btn-default" id="small">
+		<span class="glyphicon glyphicon-resize-full" aria-hidden="true" id="glyph-small"></span>
+	</button>
+	<button class="btn btn-default" id="medium">
+		<span class="glyphicon glyphicon-resize-full" aria-hidden="true" id="glyph-medium"></span>
+	</button>
+	<button class="btn btn-default" id="large">
+		<span class="glyphicon glyphicon-resize-full" aria-hidden="true" id="glyph-large"></span>
+	</button>
 </body>
 
 </html>
