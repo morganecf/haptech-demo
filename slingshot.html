@@ -29,7 +29,6 @@
 	  	seg.add(new Point(x1, y1), new Point(x2, y2));
   	};
 
-
   	// Different set up based on chosen separation size
   	var setup = function (size) {
   		var components = {};
@@ -39,6 +38,12 @@
   		var mid = height / 2;
   		var a = mid + ((size / 2) * mid);
   		var b = mid - ((size / 2) * mid);
+
+  		// Ground 
+  		components.ground = {
+  			x1: 0, y1: 0, x2: 0, y2: height,
+  			create: function () { return segment(this.x1, this.y1, this.x2, this.y2); }
+  		};
 
   		// Slingshot arms 
   		components.armTop = {
@@ -69,10 +74,11 @@
   		};
 
   		// The bird center is slightly offset from the center of the slingshot 
+  		components.bird_radius = bird_radius;
   		components.bird_center = null;
   		components.bird = function () {
-  			components.bird_center = new Point(components.start.x + 20, components.start.y - 8);
-			var bird = new Path.Circle(components.bird_center, bird_radius);
+  			components.bird_center = {x: components.start.x + 20, y: components.start.y - 8};
+			var bird = new Path.Circle(new Point(components.bird_center), bird_radius);
 			bird.fillColor = 'red';
 			return bird;
   		};
@@ -86,72 +92,77 @@
   	// };
 
   	// Set up the slingshot arena 
-	var ground = segment(0, 0, 0, height);
 	var arena = setup(small);
+
+	arena.ground.create();
 	arena.armTop.create();
 	arena.armBottom.create();
+	
 	var slingshot = arena.slingshot();
 	var bird = arena.bird();
 
 	// Determines if the point is in the circle
-	// var touchingBird = function (x, y) {
-	// 	var r = Math.pow(bird.position.x - x, 2) + Math.pow(bird.position.y - y, 2);
-	// 	return r <= Math.pow(radius, 2);
-	// };
+	var touchingBird = function (x, y) {
+		var r = Math.pow(bird.position.x - x, 2) + Math.pow(bird.position.y - y, 2);
+		return r <= Math.pow(bird_radius, 2);
+	};
 
- //  	// Functionality to drag the slingshot 
- //  	var pulling = false;
- //  	var released = false;
- //  	canvas.onmousedown = function (event) {
- //  		//event.preventDefault();
- //  		// Only send mouse down event if the mouse is touching the bird  
- //  		if (touchingBird(event.x, event.y)) {
- //  			socket.emit('mousedown', {x: event.x, y: event.y});
- //  		}
- //  	};
- //  	canvas.onmousemove = function (event) {
- //  		//console.log('mouse move');
- //  		if (pulling) {
- //  			apex.point.y = event.y;
- //  			apex.point.x = event.x;
- //  			bird.position.y = event.y;
- //  			bird.position.x = event.x;
+	arena.width = width;
+	arena.height = height;
 
- //  			socket.emit('mousemove', {x: event.x, y: event.y});
- //  		}
- //  	};
- //  	canvas.onmouseover = function (event) {
- //  		if (pulling) socket.emit('mousemove', {x: event.x, y: event.y});
- //  	};
- //  	canvas.onmouseup = function (event) {
- //  		pulling = false;
- //  		released = true;
+	console.log(arena);
 
- //  		socket.emit('mouseup', {x: event.x, y: event.y});
- //  	};
+	// Tell the backend we're ready 
+	socket.emit('ready', JSON.stringify(arena));
 
- //  	// Tell the frontend we are ready 
- //  	socket.emit('ready', {width: width, height: height});
+  	// Functionality to drag the slingshot 
+  	var pulling = false;
+  	var released = false;
+  	canvas.onmousedown = function (event) {
+  		//event.preventDefault();
+  		// Only send mouse down event if the mouse is touching the bird  
+  		if (touchingBird(event.x, event.y)) {
+  			socket.emit('mousedown', {x: event.x, y: event.y});
+  		}
+  	};
+  	canvas.onmousemove = function (event) {
+  		if (pulling) {
+  			slingshot.apex.point.y = event.y;
+  			slingshot.apex.point.x = event.x;
+  			bird.position.y = event.y;
+  			bird.position.x = event.x;
 
- //  	// Backend has determined we're dragging the bird 
- //  	socket.on('pulling', function () {
- //  		pulling = true;
- //  	});
+  			socket.emit('mousemove', {x: event.x, y: event.y});
+  		}
+  	};
+  	canvas.onmouseover = function (event) {
+  		if (pulling) socket.emit('mousemove', {x: event.x, y: event.y});
+  	};
+  	canvas.onmouseup = function (event) {
+  		pulling = false;
+  		released = true;
 
- //  	socket.on('draw', function (pos) {
- //  		//console.log('drawing?');
- //  		if (released) {
- //  			//console.log('drawing from simulation - released');
- //  			// Slingshot goes back to original position
- //  			apex.point.y = start.y;
- //  			apex.point.x = start.x;
- //  			// Bird goes flying according to simulation 
- //  			bird.position.y = pos.y;
- //  			bird.position.x = pos.x;
+  		socket.emit('mouseup', {x: event.x, y: event.y});
+  	};
 
- //  			view.draw();
- //  		}
- //  	});
+  	// Backend has determined we're dragging the bird 
+  	socket.on('pulling', function () {
+  		pulling = true;
+  	});
+
+  	socket.on('draw', function (pos) {
+  		if (released) {
+  			// Slingshot goes back to original position
+  			slingshot.apex.point.y = arena.start.y;
+  			slingshot.apex.point.x = arena.start.x;
+
+  			// Bird goes flying according to simulation 
+  			bird.position.y = pos.y;
+  			bird.position.x = pos.x;
+
+  			view.draw();
+  		}
+  	});
 
   </script>
 

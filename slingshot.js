@@ -23,17 +23,12 @@ var simulation_timestep = 1.0 / 60.0;		// 1/seconds
 var interval_step = 66;						// milliseconds 
 
 // Global variables
-var body = null;
-var space = null;
+var body, space, arena;
+var width, height, spring_height;
 var arm_size = 300;
 var constraints = {};
-var width, height, spring_height;
 
-function slingshot (height, width) {
-	if (!(height && width)) {
-		height = 1300;
-		width = 800;
-	}
+function slingshot () {
 
 	// Create space 
 	space = new cp.Space();
@@ -50,9 +45,9 @@ function slingshot (height, width) {
   	};
 
   	// The ground and two slingshot arms 
-  	var ground = segment(0, height, width, height);
- 	var armL = segment(width * .33, height, width * .33, height - arm_size);
- 	var armR = segment(width * .63, height, width * .63, height - arm_size);
+  	var ground = segment(arena.ground.x1, arena.ground.y1, arena.ground.x2, arena.ground.y2);
+ 	var armL = segment(arena.armTop.x1, arena.armTop.y1, arena.armTop.x2, arena.armTop.y2);
+ 	var armR = segment(arena.armBottom.x1, arena.armBottom.y1, arena.armBottom.x2, arena.armBottom.y2);
 
  	space.setDefaultCollisionHandler(null, null, function (arbiter, space) {
  		console.log('collision');
@@ -63,9 +58,11 @@ function slingshot (height, width) {
 		if (body) {
 			var pos = body.getPos();
 
-			if (constraints.spring_on && pos.y < spring_height) {
+			// Add an offset of 5
+			if (constraints.spring_on && pos.x > (arena.start.x + arena.bird_radius + 5)) {
 				space.removeConstraint(constraints.spring);
 				constraints.spring_on = false;
+				console.log('release');
 			}
 
 			space.step(simulation_timestep);
@@ -78,37 +75,29 @@ function slingshot (height, width) {
 // Start the simulation as soon as front end has loaded 
 io.on('connection', function (socket) {
 
-	// Somewhat arbitrary
-  	var slingshotPath = function (x) {
-  		return -50 * Math.sin(x / 100) + (height - arm_size);
-  	};
-
 	// Wait for the front end to be ready 
-	socket.on('ready', function (dimensions) {
-		width = dimensions.width;
-		height = dimensions.height;
-		spring_height = (slingshotPath(width * .45)) - 8;
+	socket.on('ready', function (arena_info) {
+		arena = JSON.parse(arena_info);
+		width = arena.width;
+		height = arena.height;
 
-		console.log('spring height:', spring_height);
-
-		slingshot(width, height);
+		slingshot();
 	});
  
  	// On mouse down, create the bird and spring 
 	socket.on('mousedown', function (pos) {
 		if (space) {
 			// The body we're going to throw 
-		 	var start = cp.v((width * .45) + 20, spring_height);
-		 	var mass = 3, radius = 20;
-		 	var momentum = cp.momentForCircle(mass, 0, radius, cp.v(0, 0));
+		 	var start = cp.v(arena.bird_center.x, arena.bird_center.y);
+		 	var mass = 3;
+		 	var momentum = cp.momentForCircle(mass, 0, arena.bird_radius, cp.v(0, 0));
 		 	body = space.addBody(new cp.Body(mass, momentum));
 		 	body.setPos(start);
-		 	var shape = space.addShape(new cp.CircleShape(body, radius, cp.v(0, 0)));
+		 	var shape = space.addShape(new cp.CircleShape(body, arena.bird_radius, cp.v(0, 0)));
 
 			// Slingshot is modeled as a simplified spring attached to invisible body in the middle of the two arms
-			//var spring_location = cp.v((width * .45 + 20), height - arm_size); 
 		 	var spring_body = new cp.Body(Infinity, Infinity);
-		 	spring_body.setPos(start);
+		 	spring_body.setPos(arena.start);
 		  	var spring = new cp.DampedSpring(spring_body, body, cp.v(0, 0), body.world2Local(start), 0, 100, 0);
 			space.addConstraint(spring);
 			constraints.spring = spring;
