@@ -26,6 +26,8 @@ var interval_step = 66;						// milliseconds
 var body = null;
 var space = null;
 var arm_size = 300;
+var constraints = {};
+var width, height, spring_height;
 
 function slingshot (height, width) {
 	if (!(height && width)) {
@@ -35,7 +37,7 @@ function slingshot (height, width) {
 
 	// Create space 
 	space = new cp.Space();
-	space.gravity = cp.v(0, 500);
+	space.gravity = cp.v(0, 0);
 	space.collisionSlop = 0.5;
 
 	// Function for slingshot parts 
@@ -50,13 +52,22 @@ function slingshot (height, width) {
   	// The ground and two slingshot arms 
   	var ground = segment(0, height, width, height);
  	var armL = segment(width * .33, height, width * .33, height - arm_size);
- 	var armR = segment(width * .63, height, width * .63, height - arm_size); 
+ 	var armR = segment(width * .63, height, width * .63, height - arm_size);
+
+ 	space.setDefaultCollisionHandler(null, null, function (arbiter, space) {
+ 		console.log('collision');
+ 	});
 
 	// Step through the simulation 
 	setInterval(function () {
 		if (body) {
 			var pos = body.getPos();
-			console.log(pos);
+
+			if (constraints.spring_on && pos.y < spring_height) {
+				space.removeConstraint(constraints.spring);
+				constraints.spring_on = false;
+			}
+
 			space.step(simulation_timestep);
 			io.emit('draw', pos);
 		}
@@ -67,9 +78,6 @@ function slingshot (height, width) {
 // Start the simulation as soon as front end has loaded 
 io.on('connection', function (socket) {
 
-	var constraints = {};
-	var width, height;
-
 	// Somewhat arbitrary
   	var slingshotPath = function (x) {
   		return -50 * Math.sin(x / 100) + (height - arm_size);
@@ -79,6 +87,10 @@ io.on('connection', function (socket) {
 	socket.on('ready', function (dimensions) {
 		width = dimensions.width;
 		height = dimensions.height;
+		spring_height = (slingshotPath(width * .45)) - 8;
+
+		console.log('spring height:', spring_height);
+
 		slingshot(width, height);
 	});
  
@@ -86,7 +98,7 @@ io.on('connection', function (socket) {
 	socket.on('mousedown', function (pos) {
 		if (space) {
 			// The body we're going to throw 
-		 	var start = cp.v((width * .45) + 20, (slingshotPath(width * .45)) - 8);
+		 	var start = cp.v((width * .45) + 20, spring_height);
 		 	var mass = 3, radius = 20;
 		 	var momentum = cp.momentForCircle(mass, 0, radius, cp.v(0, 0));
 		 	body = space.addBody(new cp.Body(mass, momentum));
@@ -97,9 +109,10 @@ io.on('connection', function (socket) {
 			//var spring_location = cp.v((width * .45 + 20), height - arm_size); 
 		 	var spring_body = new cp.Body(Infinity, Infinity);
 		 	spring_body.setPos(start);
-		  	var spring = new cp.DampedSpring(spring_body, body, cp.v(0, 0), body.world2Local(start), 0, 100, 20);
+		  	var spring = new cp.DampedSpring(spring_body, body, cp.v(0, 0), body.world2Local(start), 0, 100, 0);
 			space.addConstraint(spring);
 			constraints.spring = spring;
+			constraints.spring_on = true;
 
 			io.emit('pulling');
 		}
@@ -110,10 +123,10 @@ io.on('connection', function (socket) {
 		if (body) body.setPos(cp.v(pos.x, pos.y));
 	});
 
-	// Release the spring once the user unclicks so that bird can go flying 
+	// Release the spring once the user unclicks so that the bird can go flying 
 	socket.on('mouseup', function () {
-		if (space) space.removeConstraint(constraints.spring);
 	});
+
 });
 
 // Listen to port 3000
