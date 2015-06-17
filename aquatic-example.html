@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+  <head>
+
+  <style> 
+    #canvas {
+      margin-top: -10px;
+      margin-left: -10px;
+    }
+  </style>
+
+  <script src="jquery-1.11.3.min.js"></script>
+  <script src="paper-js/dist/paper-full.min.js"></script>
+  <script src="aquatic.js"></script>
+
+  <script type="text/paperscript" canvas="canvas"> 
+
+      $(document).ready(function () {
+          // Get the device size 
+          var width = $(window).width();
+          var height = $(window).height();
+
+          // Set the canvas to the device size 
+          $("#canvas").attr("width", width);
+          $("#canvas").attr("height", height);
+
+          // Colors and gradient width percentages for the sea gradient 
+          var sea_colors = ["#092B5A", "#09738A", "#78A890", "#9ED1B7"];
+
+          // Make the background a nice gradient of blue/green
+          var background = new Path.Rectangle({
+            topLeft: new Point(0, 0), 
+            topRight: new Point(width, 0), 
+            bottomLeft: new Point(0, height), 
+            bottomRight: new Point(width, height),
+            fillColor: {
+              gradient: {stops: sea_colors},
+              origin: new Point(0, height / 2),
+              destination: new Point(width, height / 2)
+            }
+          });
+
+          // Add the slingshot 
+          
+
+
+      });
+
+  </script> 
+
+</head>
+
+<body>
+	<canvas id="canvas" width="1000" height="550" keepalive="true"></canvas>
+</html>
