@@ -19,11 +19,11 @@ var cp = require('chipmunk');
 var GRABABLE_MASK_BIT = 1<<31;
 var NOT_GRABABLE_MASK = ~GRABABLE_MASK_BIT;
 
-var simulation_timestep = 1.0 / 60.0;		// 1/seconds
-var interval_step = 66;						// milliseconds 
+var simulation_timestep = 1.0 / 60.0;			// 1/seconds
+var interval_step = 66;							// milliseconds 
 
 // Global variables
-var body, space, arena;
+var arena, space, body, spring_body;
 var width, height, spring_height;
 var arm_size = 300;
 var constraints = {};
@@ -62,17 +62,29 @@ function slingshot () {
 		if (body) {
 			var pos = body.getPos();
 
+			/* HI RICHARD THIS IS WHERE I PRINT OUT THE SPRING FORCE */
+			if (constraints.spring_on) {	
+				var delta = cp.v.sub(pos, spring_body.p);
+				var dist = cp.v.len(delta);
+				var n = cp.v.mult(delta, 1/(dist ? dist : Infinity));
+				var f_spring = constraints.spring.springForceFunc(constraints.spring, dist);
+				var spring_force = {x: n.x * f_spring, y: n.y * f_spring};
+
+				console.log('SPRING FORCE:', spring_force);
+				console.log();
+			}
+
 			// Add an offset of 5
 			if (constraints.spring_on && pos.x > (arena.start.x + arena.bird_radius + 5)) {
+				console.log('release');
 				space.removeConstraint(constraints.spring);
 				constraints.spring_on = false;
-				console.log('release');
 			}
 
 			space.step(simulation_timestep);
 			io.emit('draw', pos);
 		}
-	}, interval_step);
+	}, 66);
 }
 
 // Start the simulation as soon as front end has loaded 
@@ -105,9 +117,9 @@ io.on('connection', function (socket) {
 		 	var shape = space.addShape(new cp.CircleShape(body, arena.bird_radius, cp.v(0, 0)));
 
 			// Slingshot is modeled as a simplified spring attached to invisible body in the middle of the two arms
-		 	var spring_body = new cp.Body(Infinity, Infinity);
+		 	spring_body = new cp.Body(Infinity, Infinity);
 		 	spring_body.setPos(arena.start);
-		  	var spring = new cp.DampedSpring(spring_body, body, cp.v(0, 0), body.world2Local(start), 0, 750, 0);
+		  	var spring = new cp.DampedSpring(spring_body, body, cp.v(0, 0), body.world2Local(start), 0, 1000, 0);
 			space.addConstraint(spring);
 			constraints.spring = spring;
 			constraints.spring_on = true;

@@ -31,6 +31,8 @@
   	var arm_size = 300; 
   	var bird_radius = 20;
 
+  	var simulation = null;
+
   	// Possible separation sizes 
   	var small = 0.33;
   	var medium = 0.63;
@@ -149,15 +151,18 @@
 	  			socket.emit('mousemove', {x: event.x, y: event.y});
 	  		}
 	  	};
-	  	canvas.onmouseover = function (event) {
-	  		if (pulling) socket.emit('mousemove', {x: event.x, y: event.y});
-	  	};
 	  	canvas.onmouseup = function (event) {
 	  		pulling = false;
 	  		released = true;
 
 	  		socket.emit('mouseup', {x: event.x, y: event.y});
 	  	};
+
+	  	// As long as we're pulling, send mouse position information over 
+	  	// this prevents the ball from being released in the backend 
+	  	simulation = setInterval(function () {
+	  		if (pulling) socket.emit('mousemove', {x: bird.position.x, y: bird.position.y});
+	  	}, 66);
 
 	  	// Backend has determined we're dragging the bird 
 	  	socket.on('pulling', function () {
@@ -185,16 +190,19 @@
   	// Resize functionality
   	$("#small").click(function () {
   		paper.project.clear();
+  		clearInterval(simulation);
   		run(small);
   	});
 
   	$("#medium").click(function () {
   		paper.project.clear();
+  		clearInterval(simulation);
   		run(medium);
   	});
 
   	$("#large").click(function () {
   		paper.project.clear();
+  		clearInterval(simulation);
   		run(large);
   	});
 
