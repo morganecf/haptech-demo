@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+  <head>
+
+  <link href="bootstrap.min.css" rel="stylesheet"/>
+  <script src="paper-js/dist/paper-full.min.js"></script>
+  <script type="text/paperscript" canvas="canvas"> 
+
+  	// Constants
+  	var height = view.size.height;
+  	var width = view.size.width;
+
+    // Styles
+    var blueberry = {stroke: '#3B8686', fill: '#79BD9A'};
+    var strawberry = {stroke: '#7F0A37', fill: '#F3043B'}
+    var banana = {stroke: '#A5BF9F', fill: '#D6D6A5'};
+
+    var style = function (bodies, styling) {
+      bodies.forEach(function (body) {
+        body.fillColor = styling.fill;
+        body.strokeColor = styling.stroke;
+        body.strokeWidth = 3;
+      });
+    };
+
+  	// Function to create a flying bird target 
+  	var target = function (center, rad, styling) {
+      var tail_offset = {x: 30, y: rad + 15};
+      var beak_offset = {x: 15, y: rad + (rad / 2) + 20};
+
+  		var body = new Path.Circle(new Point(center), rad);
+  		var head = new Path.Circle(new Point(center.x, center.y - rad), rad / 2);
+      var beak = new Path(new Point(center.x - beak_offset.x, center.y - beak_offset.y/1.4), new Point(center.x, center.y - beak_offset.y), new Point(center.x + beak_offset.x, center.y - beak_offset.y/1.4)); 
+
+      var leftwing_top = new Path.Arc({
+        from: new Point(center.x, center.y - 10),
+        through: new Point(center.x - rad/1.5, center.y - 25),
+        to: new Point(center.x - rad*1.8, center.y - 10)
+      });
+      var leftwing_bottom = new Path.Arc({
+        from: new Point(center.x, center.y - 10),
+        through: new Point(center.x - rad/1.5, center.y),
+        to: new Point(center.x - rad*1.8, center.y - 10)
+      });
+
+      var rightwing_top = new Path.Arc({
+        from: new Point(center.x, center.y - 10),
+        through: new Point(center.x + rad/1.5, center.y - 25),
+        to: new Point(center.x + rad*1.8, center.y - 10)
+      });
+      var rightwing_bottom = new Path.Arc({
+        from: new Point(center.x, center.y - 10),
+        through: new Point(center.x + rad/1.5, center.y),
+        to: new Point(center.x + rad*1.8, center.y - 10)
+      });
+    
+
+      // var offset = 1;
+      // var cover1 = new Path(new Point(center.x, center.y), new Point(center.x + rad*1.8 - offset, center.y - rad*1.8 - offset));
+      // var cover2 = new Path(new Point(center.x, center.y), new Point(center.x - rad*1.8 - offset, center.y - rad*1.8 - offset));
+      // cover1.strokeColor = '#79BD9A';
+      // cover2.strokeColor = '#79BD9A';
+      // cover1.strokeWidth = 2;
+      // cover2.strokeWidth = 2;
+      
+      var tail = new Path(new Point(center), new Point(center.x - tail_offset.x, center.y + tail_offset.y), new Point(center.x + tail_offset.x, center.y + tail_offset.y), new Point(center));
+
+      style([body, head, tail, leftwing_top, leftwing_bottom, rightwing_top, rightwing_bottom], styling);
+      style([beak], styling);
+
+      var group = new Group([leftwing_top, leftwing_bottom, rightwing_top, rightwing_bottom, tail, body, beak, head]);
+      
+      return {group: group, lw: {top: leftwing_top, bottom: leftwing_bottom}, rw: {top: rightwing_top, bottom: rightwing_bottom}};
+  	};
+
+    var t1 = target({x: 200, y: 200}, 50, blueberry);
+    var t2 = target({x: 400, y: 300}, 45, strawberry);
+    var t3 = target({x: 450, y: 340}, 45, banana);
+
+    // Animate 
+
+    var flap = function (target, rot) {
+      target.lw.top.rotate(-1*rot);
+      target.lw.bottom.rotate(-1*rot);
+      target.rw.top.rotate(rot);
+      target.rw.bottom.rotate(rot);
+    };
+
+    var i = 0;
+    var up = false;
+    function onFrame(event) {
+
+      // Move the birds 
+      t1.group.position.y -= 0.8;
+      t2.group.position.y -= 1.0;
+      t3.group.position.y -= 0.5;
+      t3.group.position.x += 0.1;
+      if (t1.group.position.y < 0) t1.group.position.y = height;
+      if (t2.group.position.y < 0) t2.group.position.y = height;
+      if (t3.group.position.y < 0) t3.group.position.y = height;
+
+      // Flap their wings 
+      if (i % 50 == 0) up = !up;
+
+      if (up) {
+        flap(t1, 1);
+        flap(t2, 1);
+        flap(t3, 1);
+      }
+      else {
+        flap(t1, -1);
+        flap(t2, -1);
+        flap(t3, -1);
+      }
+
+      i += 1;
+    }
+
+
+  </script>
+
+</head>
+
+<body>
+	<canvas id="canvas" width="1000" height="550" keepalive="true"></canvas>
+</html>
