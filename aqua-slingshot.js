@@ -22,7 +22,24 @@ var segment = function (x1, y1, x2, y2) {
 	// Add the end location 
 	seg.add(new Point(x2, y2));
 	seg.strokeCap = 'round';
-	//seg.smooth();
+	seg.opacity = 0.5;
+};
+
+// Function to create an urchin spike 
+var spike = function (urchin) {
+
+};
+
+var bubble_colors = ['#E2FFE6', '#DDFEFE', '#DEF6FD', '#FAECFF'];
+
+// Function to create a bubble 
+var bubble = function (pos, size) {
+	var b = new Path.Circle(pos, size);
+	b.strokeColor = bubble_colors[Math.floor(Math.random() * bubble_colors.length)];
+	b.strokeWidth = Math.ceil(1 + Math.random() * 4);
+	b.opacity = 0.1 + Math.random();
+	console.log(b.strokeWidth, b.opacity);
+	return b;
 };
 
 // Function to create a coral flower 
@@ -110,16 +127,16 @@ var setup = function (size, width, height, radius, arm_size) {
 	components.urchin = function () {
 		components.urchin_center = {x: components.start.x + 20, y: components.start.y - 8};
 		var urchin = new Path.Circle(new Point(components.urchin_center), components.urchin_radius);
+		// Add spikes to urchin 
+
 		urchin.fillColor = 'black';
+		urchin.opacity = 0.6;
 		return urchin;
 	};
 
 	// Fish target 
 	components.fish = function (size) {
 		var body = new Path();
-		// TODO 
-	};
-	components.fish.prototype.animate = function () {
 		// TODO 
 	};
 
@@ -191,6 +208,26 @@ var setup = function (size, width, height, radius, arm_size) {
 		eel.head.position.x = top_pos;
 	};
 
+	components.init_bubbles = function (n, width, height) {
+		var bubbles = [];
+		var pos, rad, bub;
+		for (var i = 0; i < n; i++) {
+			pos = new Point(Math.random() * width, Math.random() * height);
+			rad = Math.random() * 10;
+			bub = bubble(pos, rad);
+			bubbles.push(bub);
+		}
+		return bubbles;
+	};
+	components.animate_bubbles = function (bubbles, step, width) { 
+		for (var i = 0; i < bubbles.length; i++) {
+			// reset if needed 
+			if (bubbles[i].position.x > width) bubbles[i].position.x = 0;
+			// otherwise move bubble 
+			else bubbles[i].position.x += step;
+		}
+	};
+
 	return components;
 };
 
@@ -240,9 +277,15 @@ $(document).ready(function () {
         var slingshot = arena.slingshot();
         var urchin = arena.urchin();
 
+        // Create a first layer of bubbles 
+        var bubble_layer1 = arena.init_bubbles(60, width, height);
+
         // Create the animated bodies, starting with some eels
         var e1 = { p: new Point(950, 150), size: 60, dir: -1, step: 5, width: 20 };
        	var eel1 = arena.eel(e1);
+
+       	// Create a second layer of bubbles 
+       	var bubble_layer2 = arena.init_bubbles(60, width, height);
 
         // Determines if the mouse is on the projectile
         var touchingUrchin = function (x, y) {
@@ -256,6 +299,7 @@ $(document).ready(function () {
         var time = 0.0;
         setInterval(function () {
 	      	arena.animate_eel(eel1, time, e1.step, e1.p.x, e1.width);
+	      	arena.animate_bubbles(bubble_layer2, 1, width);
 	      	view.draw();
 	      	time += 0.1;
 	    }, 100);
