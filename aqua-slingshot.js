@@ -25,9 +25,20 @@ var segment = function (x1, y1, x2, y2) {
 	seg.opacity = 0.5;
 };
 
-// Function to create an urchin spike 
-var spike = function (urchin) {
+// Solve for y given circle radius and x 
+var circle_y = function (x, rad) {
+	return Math.sqrt(Math.pow(rad, 2) - Math.pow(x, 2));
+};
 
+// Function to create an urchin spike 
+var spike = function (position, radius, thickness) {
+	var len = Math.random() * radius;
+	var p1 = new Point(position.x, position.y);
+	var p2 = new Point(position.x + radius + len, position.y + radius + len);
+	var s = new Path(p1, p2);
+	s.strokeColor = 'black';
+	s.strokeWidth = 2;
+	return s;
 };
 
 var bubble_colors = ['#E2FFE6', '#DDFEFE', '#DEF6FD', '#FAECFF'];
@@ -38,7 +49,6 @@ var bubble = function (pos, size) {
 	b.strokeColor = bubble_colors[Math.floor(Math.random() * bubble_colors.length)];
 	b.strokeWidth = Math.ceil(1 + Math.random() * 4);
 	b.opacity = 0.1 + Math.random();
-	console.log(b.strokeWidth, b.opacity);
 	return b;
 };
 
@@ -125,12 +135,33 @@ var setup = function (size, width, height, radius, arm_size) {
 	components.urchin_radius = radius;
 	components.urchin_center = null;
 	components.urchin = function () {
-		components.urchin_center = {x: components.start.x + 20, y: components.start.y - 8};
-		var urchin = new Path.Circle(new Point(components.urchin_center), components.urchin_radius);
-		// Add spikes to urchin 
+		components.urchin_center = center = {x: components.start.x + 20, y: components.start.y - 8};
 
-		urchin.fillColor = 'black';
-		urchin.opacity = 0.6;
+		// Add spikes to urchin 
+		var spikes = [];
+		for (var i = 0; i < 200; i++) {
+			var s = spike(center, components.urchin_radius);
+			s.rotate(Math.random() * 500);
+			spikes.push(s);
+		}
+
+		var body = new Group(spikes);
+		body.fillColor = 'black';
+		body.opacity = 0.6;
+		body.position = center;
+
+		// Add eyes to urchin 
+		var eye1 = new Path.Circle(new Point(center.x - 5, center.y), 8);
+		var eye2 = new Path.Circle(new Point(center.x + 5, center.y), 8);
+		var inner1 = new Path.Circle(new Point(center.x - 5, center.y), 2);
+		var inner2 = new Path.Circle(new Point(center.x + 5, center.y), 2);
+		var outers = new Group(eye1, eye2);
+		var inners = new Group(inner1, inner2);
+		outers.fillColor = 'black';
+		inners.fillColor = 'white';
+		var eyes = new Group(outers, inners);
+
+		var urchin = {body: body, eyes: eyes, inners: inners}
 		return urchin;
 	};
 
@@ -303,6 +334,14 @@ $(document).ready(function () {
 	      	view.draw();
 	      	time += 0.1;
 	    }, 100);
+
+        // Blink eyes every 4 seconds
+	    setInterval(function () {
+	    	urchin.inners.fillColor = 'black';
+	    	setTimeout(function () {	
+	    		urchin.inners.fillColor = 'white';
+	    	}, 200);
+	    }, 5000);
 
         // Tell the backend we're ready 
       //   socket.emit('ready', JSON.stringify(arena));
