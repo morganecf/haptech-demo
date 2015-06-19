@@ -26,9 +26,7 @@ var segment = function (x1, y1, x2, y2) {
 };
 
 // Solve for y given circle radius and x 
-var circle_y = function (x, rad) {
-	return Math.sqrt(Math.pow(rad, 2) - Math.pow(x, 2));
-};
+var circle_y = function (x, rad) { return Math.sqrt(Math.pow(rad, 2) - Math.pow(x, 2)); };
 
 // Function to create an urchin spike 
 var spike = function (position, radius, thickness) {
@@ -101,10 +99,11 @@ var setup = function (size, width, height, radius, arm_size) {
 		return slingshot;
 	};
 
-	// The urchin center is slightly offset from the center of the slingshot 
+	// Urchin projectile 
 	components.urchin_radius = radius;
 	components.urchin_center = null;
 	components.urchin = function () {
+		// The urchin center is slightly offset from the center of the slingshot 
 		components.urchin_center = center = {x: components.start.x + 20, y: components.start.y - 8};
 
 		// Add spikes to urchin 
@@ -137,12 +136,9 @@ var setup = function (size, width, height, radius, arm_size) {
 	};
 
 	// Fish target 
-	components.fish = function (size) {
-		var body = new Path();
-		// TODO 
-	};
+	components.fish = function (size) { };
 
-	// Eel - direction is 1 or -1 
+	// Eel target 
 	components.eel = function (specs) {
 		var body = new Path(specs.p);
 		var back = new Path(specs.p);
@@ -206,6 +202,7 @@ var setup = function (size, width, height, radius, arm_size) {
 		// Advance the eel up and down 
 		eel.group.position.y += step;
 
+		// Make sure other eel components follow sinusoidal suit 
 		eel.eyes.position.x = top_pos;
 		eel.tail.position.x = bottom_pos;
 		eel.tail.segments[1].x = top_pos;
@@ -282,8 +279,8 @@ $(document).ready(function () {
         var bubble_layer1 = arena.init_bubbles(60, width, height);
 
         // Create the animated bodies, starting with some eels
-        var e1 = { p: new Point(950, 150), size: 60, dir: -1, step: 5, width: 20 };
-       	var eel1 = arena.eel(e1);
+        var eel_specs = { p: new Point(950, 150), size: 60, dir: -1, step: 5, width: 20 };
+       	var eel = arena.eel(eel_specs);
 
        	// Create a second layer of bubbles 
        	var bubble_layer2 = arena.init_bubbles(60, width, height);
@@ -296,15 +293,20 @@ $(document).ready(function () {
 
         arena.width = width;
         arena.height = height;
-        //arena.eel_center = {x:  
+        arena.eel = {
+        	x: eel.group.position.x, 
+        	y: eel.group.position.y,
+        	length: eel_specs.size * 3,
+        	width: 20
+        }; 
 
-        var time = 0.0;
-        setInterval(function () {
-	      	arena.animate_eel(eel1, time, e1.step, e1.p.x, e1.width);
-	      	arena.animate_bubbles(bubble_layer2, 1, width);
-	      	view.draw();
-	      	time += 0.1;
-	    }, 100);
+     //    var time = 0.0;
+     //    setInterval(function () {
+	    //   	arena.animate_eel(eel, time, eel_specs.step, eel_specs.p.x, eel_specs.width);
+	    //   	arena.animate_bubbles(bubble_layer2, 1, width);
+	    //   	view.draw();
+	    //   	time += 0.1;
+	    // }, 100);
 
         // Blink eyes every 4 seconds
 	    // setInterval(function () {
@@ -327,43 +329,55 @@ $(document).ready(function () {
 			}
         };
         canvas.onmousemove = function (event) {
-          if (pulling) {
-            slingshot.apex.point.y = event.y;
-            slingshot.apex.point.x = event.x;
-            urchin.group.position.y = event.y;
-            urchin.group.position.x = event.x;
+			if (pulling) {
+				slingshot.apex.point.y = event.y;
+				slingshot.apex.point.x = event.x;
+				urchin.group.position.y = event.y;
+				urchin.group.position.x = event.x;
 
-            socket.emit('mousemove', {x: event.x, y: event.y});
-          }
+				socket.emit('mousemove', {x: event.x, y: event.y});
+			}
         };
         canvas.onmouseup = function (event) {
-          pulling = false;
-          released = true;
-
-          socket.emit('mouseup', {x: event.x, y: event.y});
+			pulling = false;
+			released = true;
         };
 
         // As long as we're pulling, send mouse position information over 
         // this prevents the ball from being released in the backend 
-        simulation = setInterval(function () {
-          	if (pulling) socket.emit('mousemove', {x: urchin.group.position.x, y: urchin.group.position.y});
-        }, 66);
+        // simulation = setInterval(function () {
+        //   	if (pulling) socket.emit('mousemove', {x: urchin.group.position.x, y: urchin.group.position.y});
+        // }, 66);
 
         // Backend has determined we're dragging the urchin
         socket.on('pulling', function () { pulling = true; });
 
+        var time = 0.0;
         socket.on('draw', function (pos) {
-          if (released) {
-            // Slingshot goes back to original position
-            slingshot.apex.point.y = arena.start.y;
-            slingshot.apex.point.x = arena.start.x;
 
-            // Urchin goes flying according to simulation 
-            urchin.group.position.y = pos.y;
-            urchin.group.position.x = pos.x;
+        	console.log(pos.x, pulling);
 
-            view.draw();
-          }
+			if (released) {
+				// Slingshot goes back to original position
+				slingshot.apex.point.y = arena.start.y;
+				slingshot.apex.point.x = arena.start.x;
+
+				// Urchin goes flying according to simulation 
+				urchin.group.position.y = pos.y;
+				urchin.group.position.x = pos.x;
+
+				//console.log()
+			}
+
+			//if (pulling) socket.emit('mousemove', {x: urchin.group.position.x, y: urchin.group.position.y});
+
+			// Animate the eel 
+			arena.animate_eel(eel, time, eel_specs.step, eel_specs.p.x, eel_specs.width);
+			// Animate the bubbles
+			arena.animate_bubbles(bubble_layer2, 1, width);
+
+			time += 0.1;
+			view.draw();
         });
 
       }

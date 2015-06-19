@@ -19,11 +19,12 @@ var cp = require('chipmunk');
 var GRABABLE_MASK_BIT = 1<<31;
 var NOT_GRABABLE_MASK = ~GRABABLE_MASK_BIT;
 
-var simulation_timestep = 1.0 / 60.0;			// 1/seconds
-var interval_step = 66;							// milliseconds 
+var hertz = 60.0;
+var simulation_timestep = 1.0 / hertz;			 // 1/seconds
+var interval_step = simulation_timestep * 1000;	 // milliseconds 
 
 // Global variables
-var arena, space, body, spring_body;
+var arena, space, body, spring_body; 	//eel_body;
 var width, height, spring_height;
 var arm_size = 300;
 var constraints = {};
@@ -53,14 +54,16 @@ function slingshot () {
  	var armL = segment(arena.armTop.x1, arena.armTop.y1, arena.armTop.x2, arena.armTop.y2);
  	var armR = segment(arena.armBottom.x1, arena.armBottom.y1, arena.armBottom.x2, arena.armBottom.y2);
 
- 	space.setDefaultCollisionHandler(null, null, function (arbiter, space) {
- 		console.log('collision');
- 	});
+ 	// Default collision handler 
+ 	space.setDefaultCollisionHandler(null, null, function (arbiter, space) { console.log('collision'); });
 
 	// Step through the simulation 
+	var count = 0;
 	simulation = setInterval(function () {
+
 		if (body) {
 			var pos = body.getPos();
+			console.log(pos.x, pos.y);
 
 			/* HI RICHARD THIS IS WHERE I PRINT OUT THE SPRING FORCE */
 			if (constraints.spring_on) {	
@@ -69,21 +72,27 @@ function slingshot () {
 				var n = cp.v.mult(delta, 1/(dist ? dist : Infinity));
 				var f_spring = constraints.spring.springForceFunc(constraints.spring, dist);
 				var spring_force = {x: n.x * f_spring, y: n.y * f_spring};
-
-				console.log('SPRING FORCE:', spring_force);
-				console.log();
+				//console.log('spring force:', spring_force);
 			}
 
-			// Add an offset of 5
-			if (constraints.spring_on && pos.x > (arena.start.x + arena.urchin_radius)) {
-				console.log('release');
+			// if (constraints.spring_on && pos.x > (arena.start.x + arena.urchin_radius + 20)) {
+			if (constraints.spring_on && pos.x > (arena.start.x + 25)) {
+				console.log('releasing');
 				space.removeConstraint(constraints.spring);
 				constraints.spring_on = false;
 			}
-
-			space.step(simulation_timestep);
-			io.emit('draw', pos);
 		}
+
+		space.step(simulation_timestep);
+		io.emit('draw', pos);
+
+		// Only send draw information every 4 steps
+		// if (count === 3) {
+		// 	io.emit('draw', pos);
+		// 	count = 0;
+		// }
+		// count += 1;
+
 	}, 66);
 }
 
@@ -92,6 +101,7 @@ io.on('connection', function (socket) {
 
 	// Wait for the front end to be ready 
 	socket.on('ready', function (arena_info) {
+		console.log('ready');	
 		// Kill any existing simulations 
 		if (simulation) {
 			clearInterval(simulation);
@@ -119,8 +129,7 @@ io.on('connection', function (socket) {
 			// Slingshot is modeled as a simplified spring attached to invisible body in the middle of the two arms
 		 	spring_body = new cp.Body(Infinity, Infinity);
 		 	spring_body.setPos(arena.start);
-		 	// TODO - world2local should be arena.start or bird-start? 
-		  	var spring = new cp.DampedSpring(spring_body, body, cp.v(0, 0), body.world2Local(arena.start), 0, 1000, 0);
+		  	var spring = new cp.DampedSpring(spring_body, body, cp.v(0, 0), body.world2Local(arena.start), 0, 1500, 0);
 			space.addConstraint(spring);
 			constraints.spring = spring;
 			constraints.spring_on = true;
