@@ -49,7 +49,7 @@ function slingshot () {
   	};
 
   	// The ground and two slingshot arms 
-  	var ground = segment(arena.ground.x1, arena.ground.y1, arena.ground.x2, arena.ground.y2);
+  	//var ground = segment(arena.ground.x1, arena.ground.y1, arena.ground.x2, arena.ground.y2);
  	var armL = segment(arena.armTop.x1, arena.armTop.y1, arena.armTop.x2, arena.armTop.y2);
  	var armR = segment(arena.armBottom.x1, arena.armBottom.y1, arena.armBottom.x2, arena.armBottom.y2);
 
@@ -75,8 +75,7 @@ function slingshot () {
 			}
 
 			// Add an offset of 5
-			//if (constraints.spring_on && pos.x > (arena.start.x + arena.bird_radius + 5)) {
-			if (constraints.spring_on && pos.x > (arena.start.x + arena.bird_radius)) {
+			if (constraints.spring_on && pos.x > (arena.start.x + arena.urchin_radius)) {
 				console.log('release');
 				space.removeConstraint(constraints.spring);
 				constraints.spring_on = false;
@@ -110,7 +109,7 @@ io.on('connection', function (socket) {
 	socket.on('mousedown', function (pos) {
 		if (space) {
 			// The body we're going to throw 
-		 	var bird_start = cp.v(arena.bird_center.x, arena.bird_center.y);
+		 	var bird_start = cp.v(arena.urchin_center.x, arena.urchin_center.y);
 		 	var mass = 3;
 		 	var momentum = cp.momentForCircle(mass, 0, arena.bird_radius, cp.v(0, 0));
 		 	body = space.addBody(new cp.Body(mass, momentum));

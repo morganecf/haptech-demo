@@ -161,7 +161,8 @@ var setup = function (size, width, height, radius, arm_size) {
 		inners.fillColor = 'white';
 		var eyes = new Group(outers, inners);
 
-		var urchin = {body: body, eyes: eyes, inners: inners}
+		var group = new Group(body, eyes, inners);;
+		var urchin = {body: body, eyes: eyes, inners: inners, group: group}
 		return urchin;
 	};
 
@@ -292,17 +293,14 @@ $(document).ready(function () {
       });
 
       var urchin_radius = 20;   // The radius of our projectile 
-      var arm_size = 250;           // The slingshot arm height 
+      var arm_size = 350;           // The slingshot arm height 
 
       /* Call this with a certain size to run the whole slingshot simulation */
       function run (size) {
         // Set up the slingshot arena 
         var arena = setup(size, width, height, urchin_radius, arm_size);
-        //arena.ground.create();
         arena.armTop.create();
         arena.armBottom.create();
-        //arena.flowers();
-       	//arena.base.create();
 
         // Create the slingshot and urchin-projectile
         var slingshot = arena.slingshot();
@@ -319,9 +317,9 @@ $(document).ready(function () {
        	var bubble_layer2 = arena.init_bubbles(60, width, height);
 
         // Determines if the mouse is on the projectile
-        var touchingUrchin = function (x, y) {
-          var r = Math.pow(urchin.position.x - x, 2) + Math.pow(urchin.position.y - y, 2);
-          return r <= Math.pow(urchin_radius, 2);
+        var touchingUrchin = function (x, y) {;
+			var r = Math.pow(urchin.body.position.x - x, 2) + Math.pow(urchin.body.position.y - y, 2);
+			return r <= Math.pow(urchin_radius, 2);
         };
 
         arena.width = width;
@@ -344,59 +342,61 @@ $(document).ready(function () {
 	    }, 5000);
 
         // Tell the backend we're ready 
-      //   socket.emit('ready', JSON.stringify(arena));
+        socket.emit('ready', JSON.stringify(arena));
 
-      //   // Functionality to drag the slingshot 
-      //   var pulling = false;
-      //   var released = false;
-      //   canvas.onmousedown = function (event) {
-      //     //event.preventDefault();
-      //     // Only send mouse down event if the mouse is touching the bird  
-      //     if (touchingUrchin(event.x, event.y)) {
-      //       socket.emit('mousedown', {x: event.x, y: event.y});
-      //     }
-      //   };
-      //   canvas.onmousemove = function (event) {
-      //     if (pulling) {
-      //       slingshot.apex.point.y = event.y;
-      //       slingshot.apex.point.x = event.x;
-      //       urchin.position.y = event.y;
-      //       urchin.position.x = event.x;
+        // Functionality to drag the slingshot 
+        var pulling = false;
+        var released = false;
+        canvas.onmousedown = function (event) {
+        	console.log(urchin);
+			// Only send mouse down event if the mouse is on the urchin  
+			if (touchingUrchin(event.x, event.y)) {
+				socket.emit('mousedown', {x: event.x, y: event.y});
+			}
+        };
+        canvas.onmousemove = function (event) {
+          if (pulling) {
+          	console.log('pulling');
+            slingshot.apex.point.y = event.y;
+            slingshot.apex.point.x = event.x;
+            urchin.group.position.y = event.y;
+            urchin.group.position.x = event.x;
 
-      //       socket.emit('mousemove', {x: event.x, y: event.y});
-      //     }
-      //   };
-      //   canvas.onmouseup = function (event) {
-      //     pulling = false;
-      //     released = true;
+            socket.emit('mousemove', {x: event.x, y: event.y});
+          }
+        };
+        canvas.onmouseup = function (event) {
+          pulling = false;
+          released = true;
 
-      //     socket.emit('mouseup', {x: event.x, y: event.y});
-      //   };
+          socket.emit('mouseup', {x: event.x, y: event.y});
+        };
 
-      //   // As long as we're pulling, send mouse position information over 
-      //   // this prevents the ball from being released in the backend 
-      //   simulation = setInterval(function () {
-      //     if (pulling) socket.emit('mousemove', {x: urchin.position.x, y: urchin.position.y});
-      //   }, 66);
+        // As long as we're pulling, send mouse position information over 
+        // this prevents the ball from being released in the backend 
+        simulation = setInterval(function () {
+          if (pulling) socket.emit('mousemove', {x: urchin.position.x, y: urchin.position.y});
+        }, 66);
 
-      //   // Backend has determined we're dragging the bird 
-      //   socket.on('pulling', function () {
-      //     pulling = true;
-      //   });
+        // Backend has determined we're dragging the bird 
+        socket.on('pulling', function () {
+          pulling = true;
+        });
 
-      //   socket.on('draw', function (pos) {
-      //     if (released) {
-      //       // Slingshot goes back to original position
-      //       slingshot.apex.point.y = arena.start.y;
-      //       slingshot.apex.point.x = arena.start.x;
+        socket.on('draw', function (pos) {
+          if (released) {
+            // Slingshot goes back to original position
+            slingshot.apex.point.y = arena.start.y;
+            slingshot.apex.point.x = arena.start.x;
 
-      //       // Bird goes flying according to simulation 
-      //       urchin.position.y = pos.y;
-      //       urchin.position.x = pos.x;
+            // Bird goes flying according to simulation 
+            urchin.position.y = pos.y;
+            urchin.position.x = pos.x;
 
-      //       view.draw();
-      //     }
-      //   });
+            view.draw();
+          }
+        });
+
       }
 
       // Possible arena sizes 
