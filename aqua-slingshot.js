@@ -52,19 +52,6 @@ var bubble = function (pos, size) {
 	return b;
 };
 
-// Function to create a coral flower 
-var flower = function (x, y) {
-	var start = new Point(x, y);
-	var end = new Point(x + Math.random() * 10, y + Math.random() * 8);
-	var stem = new Path(start, end);
-	var bud_radius = 3;
-	var bud = new Path.Circle(new Point(end.x + bud_radius, end.y + (bud_radius /2)), 3);
-	var flower_group = new Group(stem, bud);
-	flower_group.fillColor = "#FF847C";
-	flower_group.strokeColor = "#FF847C";
-	flower_group.strokeWidth = 4;
-};
-
 // Have a different setup based on chosen slingshot arm separation size
 var setup = function (size, width, height, radius, arm_size) {
 	var components = {};
@@ -91,23 +78,6 @@ var setup = function (size, width, height, radius, arm_size) {
 	components.armBottom = {
 		x1: 0, y1: b, x2: arm_size, y2: b,
 		create: function () { segment(this.x1, this.y1, this.x2, this.y2); }
-	};
-
-	components.flowers = function () {
-		// Add a slew of flower corals to the coral arms 
-		// Do this first so that they show up above arms 
-		for (var i = 0; i < 10; i++) {
-			// Pick a random area within the top arm 
-			var x = random(components.armTop.x1, components.armTop.x2);
-			var y = random(components.armTop.y1, components.armTop.y2);
-			flower(x, y);
-		}
-		for (var i = 0; i < 10; i++) {
-			// Pick a random area within the bottom arm 
-			var x = random(components.armBottom.x1, components.armBottom.x2);
-			var y = random(components.armBottom.y1, components.armBottom.y2);
-			flower(x, y);
-		}
 	};
 	
 	// Slingshot 
@@ -217,26 +187,28 @@ var setup = function (size, width, height, radius, arm_size) {
 		// Start from top if we're at the bottom 
 		if (eel.tail.position.y > 800) eel.group.position.y = -100;
 
-		var segment1, segment2, sinus;
+		var segment1, segment2, sinus, sway;
 		var top_pos, bottom_pos;
 		for (var i = 0; i < 4; i++) {
 			segment1 = eel.body.segments[i];
 			segment2 = eel.back.segments[i];
-			sinus = Math.sin(time * 2 + i*1.3);			// A cylic value between -1 and 1
-			segment1.point.x = sinus * width + start_x;	// Move the eel body segments side to side
-			segment1.point.y += step;					// Advance the eel up or down 
-			segment2.point.x = sinus * width + start_x;
-			segment2.point.y += step;
+			// Pick a cylic value between -1 and 1
+			sinus = Math.sin(time * 2 + i*1.3);	
+			// Move the eel body segments side to side
+			sway = sinus * width + start_x;		
+			segment1.point.x = sway;			 
+			segment2.point.x = sway;
 
 			if (i == 0) top_pos = segment1.point.x;
 			if (i == 3) bottom_pos = segment1.point.x;
 		}
-		eel.eyes.position.y += step;
+
+		// Advance the eel up and down 
+		eel.group.position.y += step;
+
 		eel.eyes.position.x = top_pos;
-		eel.tail.position.y += step;
 		eel.tail.position.x = bottom_pos;
 		eel.tail.segments[1].x = top_pos;
-		eel.head.position.y += step;
 		eel.head.position.x = top_pos;
 	};
 
@@ -292,7 +264,7 @@ $(document).ready(function () {
         }
       });
 
-      var urchin_radius = 20;   // The radius of our projectile 
+      var urchin_radius = 20;   	// The radius of our projectile 
       var arm_size = 350;           // The slingshot arm height 
 
       /* Call this with a certain size to run the whole slingshot simulation */
@@ -324,6 +296,7 @@ $(document).ready(function () {
 
         arena.width = width;
         arena.height = height;
+        //arena.eel_center = {x:  
 
         var time = 0.0;
         setInterval(function () {
@@ -334,12 +307,12 @@ $(document).ready(function () {
 	    }, 100);
 
         // Blink eyes every 4 seconds
-	    setInterval(function () {
-	    	urchin.inners.fillColor = 'black';
-	    	setTimeout(function () {	
-	    		urchin.inners.fillColor = 'white';
-	    	}, 200);
-	    }, 5000);
+	    // setInterval(function () {
+	    // 	urchin.inners.fillColor = 'black';
+	    // 	setTimeout(function () {	
+	    // 		urchin.inners.fillColor = 'white';
+	    // 	}, 200);
+	    // }, 5000);
 
         // Tell the backend we're ready 
         socket.emit('ready', JSON.stringify(arena));
@@ -348,7 +321,6 @@ $(document).ready(function () {
         var pulling = false;
         var released = false;
         canvas.onmousedown = function (event) {
-        	console.log(urchin);
 			// Only send mouse down event if the mouse is on the urchin  
 			if (touchingUrchin(event.x, event.y)) {
 				socket.emit('mousedown', {x: event.x, y: event.y});
@@ -356,7 +328,6 @@ $(document).ready(function () {
         };
         canvas.onmousemove = function (event) {
           if (pulling) {
-          	console.log('pulling');
             slingshot.apex.point.y = event.y;
             slingshot.apex.point.x = event.x;
             urchin.group.position.y = event.y;
@@ -375,7 +346,7 @@ $(document).ready(function () {
         // As long as we're pulling, send mouse position information over 
         // this prevents the ball from being released in the backend 
         simulation = setInterval(function () {
-          if (pulling) socket.emit('mousemove', {x: urchin.group.position.x, y: urchin.group.position.y});
+          	if (pulling) socket.emit('mousemove', {x: urchin.group.position.x, y: urchin.group.position.y});
         }, 66);
 
         // Backend has determined we're dragging the urchin
