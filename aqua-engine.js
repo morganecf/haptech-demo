@@ -109,12 +109,12 @@ io.on('connection', function (socket) {
 	socket.on('mousedown', function (pos) {
 		if (space) {
 			// The body we're going to throw 
-		 	var bird_start = cp.v(arena.urchin_center.x, arena.urchin_center.y);
+		 	var urchin_start = cp.v(arena.urchin_center.x, arena.urchin_center.y);
 		 	var mass = 3;
-		 	var momentum = cp.momentForCircle(mass, 0, arena.bird_radius, cp.v(0, 0));
+		 	var momentum = cp.momentForCircle(mass, 0, arena.urchin_radius, cp.v(0, 0));
 		 	body = space.addBody(new cp.Body(mass, momentum));
-		 	body.setPos(bird_start);
-		 	var shape = space.addShape(new cp.CircleShape(body, arena.bird_radius, cp.v(0, 0)));
+		 	body.setPos(urchin_start);
+		 	var shape = space.addShape(new cp.CircleShape(body, arena.urchin_radius, cp.v(0, 0)));
 
 			// Slingshot is modeled as a simplified spring attached to invisible body in the middle of the two arms
 		 	spring_body = new cp.Body(Infinity, Infinity);

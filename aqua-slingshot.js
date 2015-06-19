@@ -375,13 +375,11 @@ $(document).ready(function () {
         // As long as we're pulling, send mouse position information over 
         // this prevents the ball from being released in the backend 
         simulation = setInterval(function () {
-          if (pulling) socket.emit('mousemove', {x: urchin.position.x, y: urchin.position.y});
+          if (pulling) socket.emit('mousemove', {x: urchin.group.position.x, y: urchin.group.position.y});
         }, 66);
 
-        // Backend has determined we're dragging the bird 
-        socket.on('pulling', function () {
-          pulling = true;
-        });
+        // Backend has determined we're dragging the urchin
+        socket.on('pulling', function () { pulling = true; });
 
         socket.on('draw', function (pos) {
           if (released) {
@@ -389,9 +387,9 @@ $(document).ready(function () {
             slingshot.apex.point.y = arena.start.y;
             slingshot.apex.point.x = arena.start.x;
 
-            // Bird goes flying according to simulation 
-            urchin.position.y = pos.y;
-            urchin.position.x = pos.x;
+            // Urchin goes flying according to simulation 
+            urchin.group.position.y = pos.y;
+            urchin.group.position.x = pos.x;
 
             view.draw();
           }
