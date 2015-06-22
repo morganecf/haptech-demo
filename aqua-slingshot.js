@@ -50,6 +50,37 @@ var bubble = function (pos, size) {
 	return b;
 };
 
+// Function to create a chest target
+var chest = function (y1, y2, width) {
+	var box = new Path.Rectangle({
+		topLeft: new Point(width - 50, y1),
+		topRight: new Point(width, y1),
+		bottomLeft: new Point(width - 50, y2),
+		bottomRight: new Point(width, y2),
+		fillColor: 'brown',
+		strokeColor: 'yellow',
+		strokeWidth: 3
+	});
+	var handle = new Path.Circle(new Point(width - 50, (y1 + y2) / 2), 15);
+	handle.fillColor = 'brown';
+	handle.strokeColor = 'yellow';
+	handle.strokeWidth = 3;
+
+	var group = new Group(handle, box);
+
+	var interval = (y2 - y1) / 8;
+	var line;
+	for (var i = 1; i <= 8; i++) {
+		line = new Path(new Point(width - 50, y1 + (i * interval)), new Point(width, y1 + (i * interval)));
+		line.strokeColor = 'yellow';
+		line.strokeWidth = 3;
+		line.opacity = 0.8;
+	}
+
+	group.opacity = 0.8;
+	return group;
+};
+
 // Have a different setup based on chosen slingshot arm separation size
 var setup = function (size, width, height, radius, arm_size) {
 	var components = {};
@@ -98,6 +129,15 @@ var setup = function (size, width, height, radius, arm_size) {
 		slingshot.strokeCap = 'butt';
 		return slingshot;
 	};
+
+	// Firing pad 
+    components.pad = function (height) {
+      var p = new Path(new Point(0, 0), new Point(0, height));
+      p.strokeColor = 'red';
+      p.strokeWidth = 24;
+      p.opacity = 0.7;
+      return p;
+    };
 
 	// Urchin projectile 
 	components.urchin_radius = radius;
@@ -209,6 +249,22 @@ var setup = function (size, width, height, radius, arm_size) {
 		eel.head.position.x = top_pos;
 	};
 
+	// Chest targets
+	components.chest_top = function (y1, y2, width) {
+		this.top = y1;
+		this.bottom = y2;
+		this.chest = chest(y1, y2, width);
+		return this;
+	};
+
+	components.chest_bottom = function (y1, y2, width) {
+		this.top = y1;
+		this.bottom = y2;
+		this.chest = chest(y1, y2, width);
+		return this;
+	};
+
+
 	components.init_bubbles = function (n, width, height) {
 		var bubbles = [];
 		var pos, rad, bub;
@@ -232,10 +288,45 @@ var setup = function (size, width, height, radius, arm_size) {
 	return components;
 };
 
+/* 
+	Collision detection methods 
+*/
+
+function eel_hit (urchin, eel, arena) {
+	var bb_x = eel.group.position.x - 10;
+	var urchin_x = urchin.group.position.x + arena.urchin_radius;
+	if (urchin_x >= bb_x) {
+		var bb_y1 = eel.group.position.y + 100;
+		var bb_y2 = eel.group.position.y - 100;
+		var urchin_y1 = urchin.group.position.y + arena.urchin_radius;
+		var urchin_y2 = urchin.group.position.y - arena.urchin_radius;
+		return urchin_y1 <= bb_y1 && urchin_y2 >= bb_y2;
+	}
+	return false;
+	
+}
+function target_hit (urchin, target, width, arena) {
+	var bb_x = width - 50;
+	var urchin_x = urchin.group.position.x + arena.urchin_radius;
+	if (urchin_x >= bb_x) {
+		var urchin_y1 = urchin.group.position.y + arena.urchin_radius;
+		var urchin_y2 = urchin.group.position.y - arena.urchin_radius;
+		return (urchin_y2 >= target.top && urchin_y1 <= target.bottom);
+	}
+	return false;
+}
+
+// Make eel glow red or green 
+var glow = function (eel, color) {
+	eel.body.strokeColor = color;
+	eel.tail.fillColor = color;
+	eel.head.fillColor = color;
+};
+
 /* Running the slingshot simulation */
 $(document).ready(function () {
       // Create the socket 
-      var socket = io();
+      //var socket = io();
 
       // Get the device size 
       var width = $(window).width();
@@ -271,12 +362,19 @@ $(document).ready(function () {
         arena.armTop.create();
         arena.armBottom.create();
 
-        // Create the slingshot and urchin-projectile
+        // Create the slingshot, urchin-projectile, and firing pad
         var slingshot = arena.slingshot();
         var urchin = arena.urchin();
+        var pad = arena.pad(height);
 
         // Create a first layer of bubbles 
         var bubble_layer1 = arena.init_bubbles(60, width, height);
+
+        // Create the two chest targets 
+        var chest1 = arena.chest_bottom(height - 200, height - 50, width);
+        var chest2 = arena.chest_top(50, 200, width);
+
+        console.log(chest2);
 
         // Create the animated bodies, starting with some eels
         var eel_specs = { p: new Point(950, 150), size: 60, dir: -1, step: 5, width: 20 };
@@ -284,6 +382,7 @@ $(document).ready(function () {
 
        	// Create a second layer of bubbles 
        	var bubble_layer2 = arena.init_bubbles(60, width, height);
+
 
         // Determines if the mouse is on the projectile
         var touchingUrchin = function (x, y) {;
@@ -300,24 +399,24 @@ $(document).ready(function () {
         	width: 20
         }; 
 
-     //    var time = 0.0;
-     //    setInterval(function () {
-	    //   	arena.animate_eel(eel, time, eel_specs.step, eel_specs.p.x, eel_specs.width);
-	    //   	arena.animate_bubbles(bubble_layer2, 1, width);
-	    //   	view.draw();
-	    //   	time += 0.1;
-	    // }, 100);
+        var time = 0.0;
+        setInterval(function () {
+	      	arena.animate_eel(eel, time, eel_specs.step, eel_specs.p.x, eel_specs.width);
+	      	arena.animate_bubbles(bubble_layer2, 1, width);
+	      	view.draw();
+	      	time += 0.1;
+	    }, 100);
 
         // Blink eyes every 4 seconds
-	    // setInterval(function () {
-	    // 	urchin.inners.fillColor = 'black';
-	    // 	setTimeout(function () {	
-	    // 		urchin.inners.fillColor = 'white';
-	    // 	}, 200);
-	    // }, 5000);
+	    setInterval(function () {
+	    	urchin.inners.fillColor = 'black';
+	    	setTimeout(function () {	
+	    		urchin.inners.fillColor = 'white';
+	    	}, 200);
+	    }, 5000);
 
         // Tell the backend we're ready 
-        socket.emit('ready', JSON.stringify(arena));
+        // socket.emit('ready', JSON.stringify(arena));
 
         // Functionality to drag the slingshot 
         var pulling = false;
@@ -325,7 +424,8 @@ $(document).ready(function () {
         canvas.onmousedown = function (event) {
 			// Only send mouse down event if the mouse is on the urchin  
 			if (touchingUrchin(event.x, event.y)) {
-				socket.emit('mousedown', {x: event.x, y: event.y});
+				pulling = true;
+				// socket.emit('mousedown', {x: event.x, y: event.y});
 			}
         };
         canvas.onmousemove = function (event) {
@@ -335,12 +435,83 @@ $(document).ready(function () {
 				urchin.group.position.y = event.y;
 				urchin.group.position.x = event.x;
 
-				socket.emit('mousemove', {x: event.x, y: event.y});
+				// socket.emit('mousemove', {x: event.x, y: event.y});
 			}
         };
         canvas.onmouseup = function (event) {
 			pulling = false;
 			released = true;
+
+			// Reset the slingshot 
+			slingshot.apex.point.x = arena.start.x;
+			slingshot.apex.point.y = arena.start.y;
+
+			var falling = false;
+			var hit = false;
+			var coin = new Path.Circle(new Point(-50, -50), 20);
+			coin.fillColor = 'yellow';
+			coin.strokeColor = 'GoldenRod';
+			coin.strokeWidth = 4;
+			coin.opacity = 0.8;
+			var flying = setInterval(function () {
+				console.log(coin.opacity, coin.position);
+				// If the urchin has fallen to the ground, clear the interval
+				if (urchin.group.position.y >= height) {
+					coin.position.x = -50;
+					coin.position.y = -50;
+					clearInterval(flying);
+				}
+
+				// Send the urchin sailing 
+				if (!falling) urchin.group.position.x += 50;
+				// Make the urchin fall to the ground if it's hit something
+				else urchin.group.position.y += 30;
+
+				// If a chest target has been hit, make a coin emerge
+				if (hit) {
+					coin.position.x -= 5;
+					coin.position.y -= 5;
+					if (coin.opacity === 0.0) coin.opacity = 0.0;
+					coin.opacity -= 0.05;
+				}
+
+				// Check for collision only if we haven't already 
+				if (!falling) {
+					// Check to see if urchin hits an obstacle 
+					if (eel_hit(urchin, eel, arena)) {
+						falling = true;
+
+						// Eel glows red
+						glow(eel, 'red');
+						setTimeout(function () { 
+							glow(eel, 'green'); 
+							setTimeout(function () {
+								glow(eel, 'red');
+								setTimeout(function () {
+									glow(eel, 'green');
+									setTimeout(function () {
+										glow(eel, 'red');
+										setTimeout(function () {
+											glow(eel, 'green');
+										}, 500);
+									}, 500);
+								}, 500);
+							}, 500);
+						}, 500);
+
+					}
+
+					// Check to see if hits a target
+					else if (target_hit(urchin, chest1, width, arena) || target_hit(urchin, chest2, width, arena)) {
+						falling = true;
+						hit = true;
+						coin.position.x = urchin.group.position.x;
+						coin.position.y = urchin.group.position.y;
+					}
+				}
+
+				
+			}, 66);
         };
 
         // As long as we're pulling, send mouse position information over 
@@ -350,35 +521,35 @@ $(document).ready(function () {
         // }, 66);
 
         // Backend has determined we're dragging the urchin
-        socket.on('pulling', function () { pulling = true; });
+        // socket.on('pulling', function () { pulling = true; });
 
-        var time = 0.0;
-        socket.on('draw', function (pos) {
+   //      var time = 0.0;
+   //      socket.on('draw', function (pos) {
 
-        	console.log(pos.x, pulling);
+   //      	console.log(pos.x, pulling);
 
-			if (released) {
-				// Slingshot goes back to original position
-				slingshot.apex.point.y = arena.start.y;
-				slingshot.apex.point.x = arena.start.x;
+			// if (released) {
+			// 	// Slingshot goes back to original position
+			// 	slingshot.apex.point.y = arena.start.y;
+			// 	slingshot.apex.point.x = arena.start.x;
 
-				// Urchin goes flying according to simulation 
-				urchin.group.position.y = pos.y;
-				urchin.group.position.x = pos.x;
+			// 	// Urchin goes flying according to simulation 
+			// 	urchin.group.position.y = pos.y;
+			// 	urchin.group.position.x = pos.x;
 
-				//console.log()
-			}
+			// 	//console.log()
+			// }
 
-			//if (pulling) socket.emit('mousemove', {x: urchin.group.position.x, y: urchin.group.position.y});
+			// //if (pulling) socket.emit('mousemove', {x: urchin.group.position.x, y: urchin.group.position.y});
 
-			// Animate the eel 
-			arena.animate_eel(eel, time, eel_specs.step, eel_specs.p.x, eel_specs.width);
-			// Animate the bubbles
-			arena.animate_bubbles(bubble_layer2, 1, width);
+			// // Animate the eel 
+			// arena.animate_eel(eel, time, eel_specs.step, eel_specs.p.x, eel_specs.width);
+			// // Animate the bubbles
+			// arena.animate_bubbles(bubble_layer2, 1, width);
 
-			time += 0.1;
-			view.draw();
-        });
+			// time += 0.1;
+			// view.draw();
+   //      });
 
       }
 
@@ -392,3 +563,20 @@ $(document).ready(function () {
 
 
   });
+
+
+/* 
+	== TO DO LIST == 
+	- figure out rounded corners for buttons 
+	- background bubbles screenshot
+	- usage instructions 
+	- tentatively test adding animated bubbles
+
+	== if time ==
+	- score 
+	- best score 
+	- timer
+	- time out / reset 
+	- practice shots / real game 
+*/
+
