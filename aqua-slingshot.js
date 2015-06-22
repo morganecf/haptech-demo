@@ -5,6 +5,12 @@ var random = function (a, b) {
 	return a + (Math.random() * (b - a)); 
 };
 
+// Helper function to return min of two numbers
+var min = function (a, b) {
+	if (a < b) return a;
+	else return b;
+};
+
 // Function to create a slingshot line segment 
 var segment = function (x1, y1, x2, y2) {
 	var seg = new Path();
@@ -288,6 +294,30 @@ var setup = function (size, width, height, radius, arm_size) {
 		}
 	};
 
+	components.score_card = function (width, height) {
+		var mid = height / 2;
+		var card = new Rectangle({
+			topLeft: new Point(width - 60, mid - 25),
+			topRight: new Point(width + 10, mid - 25),
+			bottomLeft: new Point(width - 60, mid + 25),
+			bottomRight: new Point(width + 10, mid + 25)
+		});
+		var round_card = new Path.RoundRectangle(card, new Size(5, 5));
+		round_card.fillColor = 'red';
+		round_card.opacity = 0.6;
+
+		var score = new PointText(new Point(width - 28, mid + 9));
+		score.justification = 'center';
+		score.fillColor = 'black';
+		score.content = '0';
+		score.fontSize = 25;
+		score.fontWeight = 200;
+
+		this.card = card;
+		this.score = score;
+		return this;
+	};
+
 	return components;
 };
 
@@ -386,6 +416,9 @@ $(document).ready(function () {
        	// Create a second layer of bubbles 
        	var bubble_layer2 = arena.init_bubbles(60, width, height);
 
+       	// Create the score card 
+       	var scorer = arena.score_card(width, height);
+
 
         // Determines if the mouse is on the projectile
         var touchingUrchin = function (x, y) {;
@@ -459,10 +492,14 @@ $(document).ready(function () {
 			coin.opacity = 0.8;
 
 			var flying = setInterval(function () {
-				// If the urchin has fallen to the ground, clear the interval
-				if (urchin.group.position.y >= height) {
+				// If the urchin has fallen to the ground or gone off screen, clear the interval and reset
+				if (urchin.group.position.y >= height || urchin.group.position.x >= width + 100) {
 					coin.position.x = -50;
 					coin.position.y = -50;
+					setTimeout(function () {
+						urchin.group.position.x = arena.start.x;
+						urchin.group.position.y = arena.start.y;
+					}, 2000);
 					clearInterval(flying);
 				}
 
@@ -475,7 +512,7 @@ $(document).ready(function () {
 				if (hit) {
 					coin.position.x -= 5;
 					coin.position.y -= 5;
-					if (coin.opacity === 0.0) coin.opacity = 0.0;
+					if (coin.opacity <= 0.05) coin.opacity = 0.05;
 					coin.opacity -= 0.05;
 				}
 
@@ -503,14 +540,20 @@ $(document).ready(function () {
 							}, 500);
 						}, 500);
 
+						// Decrement score
+						scorer.score.content = parseInt(scorer.score.content) - 1;
+
 					}
 
 					// Check to see if hits a target
 					else if (target_hit(urchin, chest1, width, arena) || target_hit(urchin, chest2, width, arena)) {
 						falling = true;
 						hit = true;
+						// Produce a coin
 						coin.position.x = urchin.group.position.x;
 						coin.position.y = urchin.group.position.y;
+						// Increment score
+						scorer.score.content = parseInt(scorer.score.content) + 1;
 					}
 				}
 
@@ -571,7 +614,6 @@ $(document).ready(function () {
 
 /* 
 	== TO DO LIST == 
-	- figure out rounded corners for buttons 
 	- background bubbles screenshot
 	- usage instructions 
 	- tentatively test adding animated bubbles
@@ -581,6 +623,5 @@ $(document).ready(function () {
 	- best score 
 	- timer
 	- time out / reset 
-	- practice shots / real game 
 */
 
