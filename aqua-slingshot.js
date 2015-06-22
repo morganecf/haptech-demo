@@ -52,32 +52,36 @@ var bubble = function (pos, size) {
 
 // Function to create a chest target
 var chest = function (y1, y2, width) {
-	var box = new Path.Rectangle({
-		topLeft: new Point(width - 50, y1),
-		topRight: new Point(width, y1),
-		bottomLeft: new Point(width - 50, y2),
-		bottomRight: new Point(width, y2),
-		fillColor: 'brown',
-		strokeColor: 'yellow',
-		strokeWidth: 3
+	var box = new Rectangle({
+		topLeft: new Point(width - 60, y1),
+		topRight: new Point(width + 10, y1),
+		bottomLeft: new Point(width - 60, y2),
+		bottomRight: new Point(width + 10, y2)
 	});
-	var handle = new Path.Circle(new Point(width - 50, (y1 + y2) / 2), 15);
+	var corner_size = new Size(10, 10);
+	var rounded_box = new Path.RoundRectangle(box, corner_size);
+
+	rounded_box.fillColor = 'brown';
+	rounded_box.strokeColor = 'yellow';
+	rounded_box.strokeWidth = 3;
+
+	var handle = new Path.Circle(new Point(width - 55, (y1 + y2) / 2), 15);
 	handle.fillColor = 'brown';
 	handle.strokeColor = 'yellow';
 	handle.strokeWidth = 3;
 
-	var group = new Group(handle, box);
+	var group = new Group(handle, rounded_box);
 
 	var interval = (y2 - y1) / 8;
 	var line;
-	for (var i = 1; i <= 8; i++) {
-		line = new Path(new Point(width - 50, y1 + (i * interval)), new Point(width, y1 + (i * interval)));
+	for (var i = 1; i < 8; i++) {
+		line = new Path(new Point(width - 60, y1 + (i * interval)), new Point(width, y1 + (i * interval)));
 		line.strokeColor = 'yellow';
 		line.strokeWidth = 3;
-		line.opacity = 0.8;
+		line.opacity = 0.7;
 	}
 
-	group.opacity = 0.8;
+	group.opacity = 0.7;
 	return group;
 };
 
@@ -264,7 +268,6 @@ var setup = function (size, width, height, radius, arm_size) {
 		return this;
 	};
 
-
 	components.init_bubbles = function (n, width, height) {
 		var bubbles = [];
 		var pos, rad, bub;
@@ -288,10 +291,10 @@ var setup = function (size, width, height, radius, arm_size) {
 	return components;
 };
 
+
 /* 
 	Collision detection methods 
 */
-
 function eel_hit (urchin, eel, arena) {
 	var bb_x = eel.group.position.x - 10;
 	var urchin_x = urchin.group.position.x + arena.urchin_radius;
@@ -449,12 +452,13 @@ $(document).ready(function () {
 			var falling = false;
 			var hit = false;
 			var coin = new Path.Circle(new Point(-50, -50), 20);
+			
 			coin.fillColor = 'yellow';
 			coin.strokeColor = 'GoldenRod';
 			coin.strokeWidth = 4;
 			coin.opacity = 0.8;
+
 			var flying = setInterval(function () {
-				console.log(coin.opacity, coin.position);
 				// If the urchin has fallen to the ground, clear the interval
 				if (urchin.group.position.y >= height) {
 					coin.position.x = -50;
