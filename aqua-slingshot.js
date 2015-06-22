@@ -5,6 +5,10 @@ var random = function (a, b) {
 	return a + (Math.random() * (b - a)); 
 };
 
+/*
+*	ADD THIS FUNCTION 
+*/ 
+
 // Helper function to return min of two numbers
 var min = function (a, b) {
 	if (a < b) return a;
@@ -55,6 +59,10 @@ var bubble = function (pos, size) {
 	b.opacity = 0.1 + Math.random();
 	return b;
 };
+
+/*
+*	ADD THIS FUNCTION 
+*/ 
 
 // Function to create a chest target
 var chest = function (y1, y2, width) {
@@ -259,6 +267,10 @@ var setup = function (size, width, height, radius, arm_size) {
 		eel.head.position.x = top_pos;
 	};
 
+	/*
+	*	ADD THIS FUNCTION
+	*/ 
+
 	// Chest targets
 	components.chest_top = function (y1, y2, width) {
 		this.top = y1;
@@ -266,6 +278,10 @@ var setup = function (size, width, height, radius, arm_size) {
 		this.chest = chest(y1, y2, width);
 		return this;
 	};
+
+	/*
+	*	ADD THIS FUNCTION 
+	*/ 
 
 	components.chest_bottom = function (y1, y2, width) {
 		this.top = y1;
@@ -294,6 +310,10 @@ var setup = function (size, width, height, radius, arm_size) {
 		}
 	};
 
+	/*
+	*	ADD THIS FUNCTION 
+	*/ 
+
 	components.score_card = function (width, height) {
 		var mid = height / 2;
 		var card = new Rectangle({
@@ -321,6 +341,9 @@ var setup = function (size, width, height, radius, arm_size) {
 	return components;
 };
 
+/*
+*	ADD THIS FUNCTION 
+*/ 
 
 /* 
 	Collision detection methods 
@@ -338,6 +361,11 @@ function eel_hit (urchin, eel, arena) {
 	return false;
 	
 }
+
+/*
+*	ADD THIS FUNCTION 
+*/ 
+
 function target_hit (urchin, target, width, arena) {
 	var bb_x = width - 50;
 	var urchin_x = urchin.group.position.x + arena.urchin_radius;
@@ -348,6 +376,10 @@ function target_hit (urchin, target, width, arena) {
 	}
 	return false;
 }
+
+/*
+*	ADD THIS FUNCTION 
+*/ 
 
 // Make eel glow red or green 
 var glow = function (eel, color) {
@@ -403,11 +435,13 @@ $(document).ready(function () {
         // Create a first layer of bubbles 
         var bubble_layer1 = arena.init_bubbles(60, width, height);
 
+        /*
+		*	ADD THESE TWO LINES - CREATE THE CHEST TARGETS 
+		*/ 
+
         // Create the two chest targets 
         var chest1 = arena.chest_bottom(height - 200, height - 50, width);
         var chest2 = arena.chest_top(50, 200, width);
-
-        console.log(chest2);
 
         // Create the animated bodies, starting with some eels
         var eel_specs = { p: new Point(950, 150), size: 60, dir: -1, step: 5, width: 20 };
@@ -415,6 +449,10 @@ $(document).ready(function () {
 
        	// Create a second layer of bubbles 
        	var bubble_layer2 = arena.init_bubbles(60, width, height);
+
+       	/*
+		*	ADD THIS LINE - CREATE THE SCORE CARD 
+		*/ 
 
        	// Create the score card 
        	var scorer = arena.score_card(width, height);
@@ -442,6 +480,10 @@ $(document).ready(function () {
 	      	view.draw();
 	      	time += 0.1;
 	    }, 100);
+
+	    /*
+		*	ADD THIS SET INTERVAL IF WANT TO HAVE EYES BLINKING  
+		*/ 
 
         // Blink eyes every 4 seconds
 	    setInterval(function () {
@@ -474,6 +516,10 @@ $(document).ready(function () {
 				// socket.emit('mousemove', {x: event.x, y: event.y});
 			}
         };
+
+        /*
+		*	THIS FUNCTION CONTAINS ALL THE POST-RELEASE FUNCTIONALITY 
+		*/ 
         canvas.onmouseup = function (event) {
 			pulling = false;
 			released = true;
@@ -482,37 +528,48 @@ $(document).ready(function () {
 			slingshot.apex.point.x = arena.start.x;
 			slingshot.apex.point.y = arena.start.y;
 
+			// Will be used to figure out if the urchin has hit a target (NOT eel) and is falling to the ground
 			var falling = false;
+			// Will be used to see if a target/eel has been hit
 			var hit = false;
+			// Will be "released" once the urchin hits one of the targets - hide it at first 
 			var coin = new Path.Circle(new Point(-50, -50), 20);
-			
 			coin.fillColor = 'yellow';
 			coin.strokeColor = 'GoldenRod';
 			coin.strokeWidth = 4;
 			coin.opacity = 0.8;
 
+			// Runs every 66 ms 
 			var flying = setInterval(function () {
 				// If the urchin has fallen to the ground or gone off screen, clear the interval and reset
 				if (urchin.group.position.y >= height || urchin.group.position.x >= width + 100) {
+					// Reset the coin position to be hidden 
 					coin.position.x = -50;
 					coin.position.y = -50;
+					// After 2 seconds reset the urchin position so we can start again 
+					// TODO: Will need to change this to be just floating around or something
+					// so that user has to pick up the urchin again 
 					setTimeout(function () {
 						urchin.group.position.x = arena.start.x;
 						urchin.group.position.y = arena.start.y;
 					}, 2000);
+					// Clear the interval so that it's no longer running 
 					clearInterval(flying);
 				}
 
-				// Send the urchin sailing 
+				// Send the urchin sailing horizontally 
+				// TODO: This is unnecessary since the physics engine will take care of this 
 				if (!falling) urchin.group.position.x += 50;
 				// Make the urchin fall to the ground if it's hit something
 				else urchin.group.position.y += 30;
 
-				// If a chest target has been hit, make a coin emerge
+				// If a chest target has been hit, make a coin emerge and float to the top left
+				// while gradually disappearing 
 				if (hit) {
 					coin.position.x -= 5;
 					coin.position.y -= 5;
-					if (coin.opacity <= 0.05) coin.opacity = 0.05;
+					// If the opacity gets negative, returns to 1, so account for this 
+					if (coin.opacity <= 0.05) coin.opacity = 0.05;	
 					coin.opacity -= 0.05;
 				}
 
@@ -545,7 +602,7 @@ $(document).ready(function () {
 
 					}
 
-					// Check to see if hits a target
+					// Check to see if urchin hits a chest target
 					else if (target_hit(urchin, chest1, width, arena) || target_hit(urchin, chest2, width, arena)) {
 						falling = true;
 						hit = true;
@@ -556,8 +613,6 @@ $(document).ready(function () {
 						scorer.score.content = parseInt(scorer.score.content) + 1;
 					}
 				}
-
-				
 			}, 66);
         };
 
@@ -610,18 +665,3 @@ $(document).ready(function () {
 
 
   });
-
-
-/* 
-	== TO DO LIST == 
-	- background bubbles screenshot
-	- usage instructions 
-	- tentatively test adding animated bubbles
-
-	== if time ==
-	- score 
-	- best score 
-	- timer
-	- time out / reset 
-*/
-
